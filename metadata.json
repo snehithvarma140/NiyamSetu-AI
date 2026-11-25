@@ -1,0 +1,11 @@
+{
+  "name": "Remix Remix Remix NiyamSetu AI",
+  "description": "India\u0027s Intelligent Rules, Procedures \u0026 Application Readiness Platform — Understand official notifications, guide citizens in English \u0026 Telugu, validate application readiness, and trace policy rule-change impacts.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

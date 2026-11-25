@@ -1,0 +1,304 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Reusable Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email in ['snehithvarma140@gmail.com', 'snehithvarma1940@gmail.com']
+      );
+    }
+
+    // Validation Blueprint: User Profile
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'languagePreference', 'role', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'languagePreference', 'role', 'phone', 'dateOfBirth', 'gender', 'guardianName', 'address', 'district', 'state', 'pincode', 'category', 'educationLevel', 'institutionName', 'rollNumber', 'savedIncome', 'savedMarks', 'disabilityPercent', 'bankName', 'bankIfsc', 'bankAccountLast4', 'incomeCertNumber', 'casteCertNumber', 'bloodGroup', 'emergencyAllergies', 'emergencyConditions', 'emergencyMedications', 'emergencyWarnings', 'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation', 'biometricId', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == userId && isValidId(data.uid)
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 200
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
+        && data.languagePreference in ['en', 'te']
+        && data.role in ['STUDENT', 'ORGANIZATION', 'ADMIN', 'PLATFORM_ADMIN', 'DEVELOPER']
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 32))
+        && (!('dateOfBirth' in data) || (data.dateOfBirth is string && data.dateOfBirth.size() <= 24))
+        && (!('gender' in data) || (data.gender is string && data.gender.size() <= 32))
+        && (!('guardianName' in data) || (data.guardianName is string && data.guardianName.size() <= 120))
+        && (!('address' in data) || (data.address is string && data.address.size() <= 300))
+        && (!('district' in data) || (data.district is string && data.district.size() <= 80))
+        && (!('state' in data) || (data.state is string && data.state.size() <= 80))
+        && (!('pincode' in data) || (data.pincode is string && data.pincode.size() <= 16))
+        && (!('category' in data) || (data.category is string && data.category.size() <= 64))
+        && (!('educationLevel' in data) || (data.educationLevel is string && data.educationLevel.size() <= 120))
+        && (!('institutionName' in data) || (data.institutionName is string && data.institutionName.size() <= 180))
+        && (!('rollNumber' in data) || (data.rollNumber is string && data.rollNumber.size() <= 64))
+        && (!('savedIncome' in data) || (data.savedIncome is number && data.savedIncome >= 0 && data.savedIncome <= 100000000))
+        && (!('savedMarks' in data) || (data.savedMarks is number && data.savedMarks >= 0 && data.savedMarks <= 100))
+        && (!('disabilityPercent' in data) || (data.disabilityPercent is number && data.disabilityPercent >= 0 && data.disabilityPercent <= 100))
+        && (!('bankName' in data) || (data.bankName is string && data.bankName.size() <= 120))
+        && (!('bankIfsc' in data) || (data.bankIfsc is string && data.bankIfsc.size() <= 20))
+        && (!('bankAccountLast4' in data) || (data.bankAccountLast4 is string && data.bankAccountLast4.size() <= 8))
+        && (!('incomeCertNumber' in data) || (data.incomeCertNumber is string && data.incomeCertNumber.size() <= 80))
+        && (!('casteCertNumber' in data) || (data.casteCertNumber is string && data.casteCertNumber.size() <= 80))
+        && (!('bloodGroup' in data) || data.bloodGroup in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'UNKNOWN'])
+        && (!('emergencyAllergies' in data) || (data.emergencyAllergies is string && data.emergencyAllergies.size() <= 300))
+        && (!('emergencyConditions' in data) || (data.emergencyConditions is string && data.emergencyConditions.size() <= 300))
+        && (!('emergencyMedications' in data) || (data.emergencyMedications is string && data.emergencyMedications.size() <= 300))
+        && (!('emergencyWarnings' in data) || (data.emergencyWarnings is string && data.emergencyWarnings.size() <= 300))
+        && (!('emergencyContactName' in data) || (data.emergencyContactName is string && data.emergencyContactName.size() <= 120))
+        && (!('emergencyContactPhone' in data) || (data.emergencyContactPhone is string && data.emergencyContactPhone.size() <= 32))
+        && (!('emergencyContactRelation' in data) || (data.emergencyContactRelation is string && data.emergencyContactRelation.size() <= 64))
+        && (!('biometricId' in data) || (data.biometricId is string && data.biometricId.size() <= 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Memorized User Document
+    function isValidUserDocument(data, docId) {
+      return data.keys().hasAll(['id', 'ownerId', 'docType', 'title', 'schemeId', 'sourceActivity', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'docType', 'title', 'schemeId', 'docNumber', 'extractedName', 'extractedIncome', 'extractedMarks', 'extractedAddress', 'notes', 'sourceActivity', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == docId && isValidId(data.id)
+        && data.ownerId is string && isValidId(data.ownerId)
+        && data.docType is string && data.docType.size() >= 1 && data.docType.size() <= 120
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 180
+        && data.schemeId is string && data.schemeId.size() >= 1 && data.schemeId.size() <= 64
+        && (!('docNumber' in data) || (data.docNumber is string && data.docNumber.size() <= 80))
+        && (!('extractedName' in data) || (data.extractedName is string && data.extractedName.size() <= 120))
+        && (!('extractedIncome' in data) || (data.extractedIncome is number && data.extractedIncome >= 0 && data.extractedIncome <= 100000000))
+        && (!('extractedMarks' in data) || (data.extractedMarks is number && data.extractedMarks >= 0 && data.extractedMarks <= 100))
+        && (!('extractedAddress' in data) || (data.extractedAddress is string && data.extractedAddress.size() <= 300))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000))
+        && data.sourceActivity in ['vault_manual', 'vault_upload', 'formsathi_extract', 'eligibility_sync']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Saved Bookmark
+    function isValidBookmark(data, bookmarkId) {
+      return data.keys().hasAll(['id', 'ownerId', 'schemeId', 'title', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'schemeId', 'title', 'note', 'status', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == bookmarkId && isValidId(data.id)
+        && data.ownerId is string && isValidId(data.ownerId)
+        && data.schemeId is string && data.schemeId.size() >= 1 && data.schemeId.size() <= 64
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && (!('note' in data) || (data.note is string && data.note.size() <= 1000))
+        && data.status in ['saved', 'in_progress', 'ready']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Public Verified Scheme Catalog (Non-PII)
+    function isValidSchemeCatalog(data, schemeId) {
+      return data.keys().hasAll(['id', 'code', 'name', 'authority', 'benefitSummary', 'activeRulesCount', 'active', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'code', 'name', 'authority', 'benefitSummary', 'activeRulesCount', 'active', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == schemeId && isValidId(data.id) && data.id.size() <= 64
+        && data.code is string && data.code.size() >= 2 && data.code.size() <= 24
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 200
+        && data.authority is string && data.authority.size() >= 2 && data.authority.size() <= 200
+        && data.benefitSummary is string && data.benefitSummary.size() >= 2 && data.benefitSummary.size() <= 300
+        && data.activeRulesCount is number && data.activeRulesCount >= 0 && data.activeRulesCount <= 500
+        && data.active is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Citizen Readiness Check Summary
+    function isValidReadinessCheck(data, checkId) {
+      return data.keys().hasAll(['id', 'ownerId', 'schemeId', 'applicantLabel', 'completedCount', 'missingCount', 'uncertainCount', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'schemeId', 'applicantLabel', 'completedCount', 'missingCount', 'uncertainCount', 'status', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == checkId && isValidId(data.id)
+        && data.ownerId is string && isValidId(data.ownerId)
+        && data.schemeId is string && data.schemeId.size() >= 1 && data.schemeId.size() <= 64
+        && data.applicantLabel is string && data.applicantLabel.size() >= 1 && data.applicantLabel.size() <= 120
+        && data.completedCount is number && data.completedCount >= 0 && data.completedCount <= 100
+        && data.missingCount is number && data.missingCount >= 0 && data.missingCount <= 100
+        && data.uncertainCount is number && data.uncertainCount >= 0 && data.uncertainCount <= 100
+        && data.status in ['ready', 'needs_action']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Connection Probe Document (read-only health doc)
+    match /test/{docId} {
+      allow get: if docId == 'connection';
+    }
+
+    // Admin Registry (read own or admin; client writes locked to admin only)
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerifiedUser() && request.auth.token.email in ['snehithvarma140@gmail.com', 'snehithvarma1940@gmail.com'];
+      allow create, update, delete: if isAdmin() && isValidId(userId);
+    }
+
+    // Private User Profiles (Strict PII Isolation)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerifiedUser() && request.auth.token.email in ['snehithvarma140@gmail.com', 'snehithvarma1940@gmail.com'];
+
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (incoming().role == 'STUDENT' || isAdmin());
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && incoming().role == existing().role
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'languagePreference', 'phone', 'dateOfBirth', 'gender', 'guardianName', 'address', 'district', 'state', 'pincode', 'category', 'educationLevel', 'institutionName', 'rollNumber', 'savedIncome', 'savedMarks', 'disabilityPercent', 'bankName', 'bankIfsc', 'bankAccountLast4', 'incomeCertNumber', 'casteCertNumber', 'bloodGroup', 'emergencyAllergies', 'emergencyConditions', 'emergencyMedications', 'emergencyWarnings', 'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation', 'biometricId', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    // Memorized User Documents Vault (Strict PII & Owner Isolation)
+    match /user_documents/{docId} {
+      allow get: if isValidId(docId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(docId)
+        && isValidUserDocument(incoming(), docId)
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(docId)
+        && isValidUserDocument(incoming(), docId)
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['docType', 'title', 'schemeId', 'docNumber', 'extractedName', 'extractedIncome', 'extractedMarks', 'extractedAddress', 'notes', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser() && isValidId(docId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // Citizen Saved Scheme Bookmarks & Readiness Notes
+    match /saved_bookmarks/{bookmarkId} {
+      allow get: if isValidId(bookmarkId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(bookmarkId)
+        && isValidBookmark(incoming(), bookmarkId)
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(bookmarkId)
+        && isValidBookmark(incoming(), bookmarkId)
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && existing().status != 'ready'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'note', 'status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser() && isValidId(bookmarkId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // Public Non-PII Verified Scheme Catalog (Admin-managed, Publicly Queryable for Active Schemes)
+    match /schemes_catalog/{schemeId} {
+      allow get: if isValidId(schemeId) && (isAdmin() || (resource != null && existing().active == true));
+      allow list: if resource.data.active == true;
+
+      allow create: if isAdmin()
+        && isValidId(schemeId)
+        && isValidSchemeCatalog(incoming(), schemeId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isAdmin()
+        && isValidId(schemeId)
+        && isValidSchemeCatalog(incoming(), schemeId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+
+      allow delete: if isAdmin() && isValidId(schemeId);
+    }
+
+    // Citizen Personal Readiness Checks (Strict Owner Isolation)
+    match /readiness_checks/{checkId} {
+      allow get: if isValidId(checkId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(checkId)
+        && isValidReadinessCheck(incoming(), checkId)
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(checkId)
+        && isValidReadinessCheck(incoming(), checkId)
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && existing().status != 'ready'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['applicantLabel', 'completedCount', 'missingCount', 'uncertainCount', 'status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser() && isValidId(checkId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+  }
+}

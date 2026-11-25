@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NiyamSetu AI – Working Demo</title>
+<style>
+:root{--bg:#f2f5f7;--cd:#fff;--tx:#15232e;--mu:#5d6c78;--bd:#d6dde3;--ac:#0b6b7a;--acb:#e0f0f3;--am:#a64b05;--amb:#fdeedc;--ok:#146c36;--okb:#e1f4e8;--er:#a3231b;--erb:#fbe6e4;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10181e;--cd:#18232b;--tx:#e6edf2;--mu:#93a4b1;--bd:#2c3b46;--ac:#5cc3d3;--acb:#143a42;--am:#f0a566;--amb:#3a2813;--ok:#6fd195;--okb:#12341f;--er:#ff9a92;--erb:#401a17;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10181e;--cd:#18232b;--tx:#e6edf2;--mu:#93a4b1;--bd:#2c3b46;--ac:#5cc3d3;--acb:#143a42;--am:#f0a566;--amb:#3a2813;--ok:#6fd195;--okb:#12341f;--er:#ff9a92;--erb:#401a17;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--cd)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--cd);border-bottom:1px solid var(--bd);padding:10px 16px 0}
+.br{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.br b{font:700 19px Georgia,"Times New Roman",serif}.br span{color:var(--mu);font-size:13px}
+nav{display:flex;gap:2px;overflow-x:auto;margin-top:6px}nav a{padding:8px 12px;color:var(--mu);text-decoration:none;white-space:nowrap;border-bottom:3px solid transparent;font-size:14px}nav a.on{color:var(--ac);border-color:var(--ac);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 clamp(26px,5vw,40px)/1.15 Georgia,"Times New Roman",serif;margin:.2em 0 .4em;max-width:20em}h2{font:700 22px Georgia,serif;margin:0 0 6px}h3{font-size:16px;margin:0}
+.mu{color:var(--mu)}.sm{font-size:13px}.kick{color:var(--ac);font-weight:600;margin:0}
+.flow{list-style:none;padding:0;margin:24px 0;border-left:2px solid var(--bd)}.flow li{padding:2px 0 16px 18px;position:relative}.flow li::before{content:"";position:absolute;left:-7px;top:8px;width:12px;height:12px;border-radius:50%;background:var(--ac)}.flow a{color:var(--tx);font-weight:600;text-decoration:none}.flow a:hover{color:var(--ac)}
+.box{background:var(--cd);border:1px solid var(--bd);border-radius:6px;padding:14px 16px;margin:12px 0}
+.box.w{border-left:4px solid var(--am)}.box.o{border-left:4px solid var(--ok)}.box.l{border-left:4px solid var(--ac)}
+.chip{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:600;background:var(--acb);color:var(--ac)}
+.chip.w{background:var(--amb);color:var(--am)}.chip.o{background:var(--okb);color:var(--ok)}.chip.e{background:var(--erb);color:var(--er)}.chip.m{background:var(--bg);color:var(--mu);border:1px solid var(--bd)}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--bd);vertical-align:top}th{color:var(--mu);font-weight:600;font-size:13px}
+del{color:var(--er);background:var(--erb);text-decoration:line-through;padding:0 3px}ins{color:var(--ok);background:var(--okb);text-decoration:none;padding:0 3px;font-weight:600}
+button{font:inherit;font-size:14px;padding:7px 14px;border-radius:5px;border:1px solid var(--ac);background:var(--ac);color:var(--cd);cursor:pointer;font-weight:600}button.g{background:transparent;color:var(--ac)}button.d{background:transparent;color:var(--er);border-color:var(--er)}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--am);outline-offset:2px}
+input[type=text],input[type=number]{font:inherit;padding:8px 10px;border:1px solid var(--bd);border-radius:5px;background:var(--bg);color:var(--tx);width:100%}
+label{display:block;font-size:13px;color:var(--mu);margin:8px 0 3px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>.grow{flex:1;min-width:200px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.ck{display:flex;gap:8px;align-items:center;margin:6px 0;color:var(--tx);font-size:15px}
+.cite{display:inline-block;margin:6px 6px 0 0;padding:2px 8px;border:1px solid var(--bd);border-radius:4px;font-size:12px;color:var(--mu);background:var(--bg)}
+ul.x{margin:6px 0;padding-left:20px}footer{max-width:980px;margin:0 auto;padding:0 16px 30px;color:var(--mu);font-size:13px}
+body{background:radial-gradient(1100px 480px at 85% -8%,var(--acb),transparent 62%),var(--bg)}
+header{background:color-mix(in srgb,var(--cd) 85%,transparent);backdrop-filter:blur(12px)}
+.hero{position:relative;min-height:440px;display:flex;flex-direction:column;justify-content:center;margin:-20px -16px 0;padding:28px 16px;overflow:hidden}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--bg) 8%,transparent 68%);pointer-events:none}
+.hero>:not(canvas){position:relative;z-index:2;max-width:31em}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:18px 0}
+.stat b{display:block;font:700 30px Georgia,serif;color:var(--ac)}.stat span{color:var(--mu);font-size:13px}
+#app{animation:in .5s cubic-bezier(.2,.7,.2,1)}@keyframes in{from{opacity:0;transform:perspective(900px) rotateX(7deg) translateY(14px)}}
+.box{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s,box-shadow .2s;box-shadow:0 12px 26px -16px rgba(10,40,60,.4)}.box:hover{box-shadow:0 22px 36px -16px rgba(10,40,60,.5)}
+.nx{display:flex;justify-content:space-between;margin-top:24px}.nx a{text-decoration:none}
+@media(prefers-reduced-motion:reduce){#app{animation:none}.box{transform:none!important}}
+</style></head><body>
+<header><div class="br"><b>NiyamSetu AI</b><span>Working demo with sample data</span><button class="g" style="margin-left:auto" onclick="location.reload()">Reset demo</button></div><nav id="nav"></nav></header>
+<main id="app"></main>
+<footer>Every notification in this demo is an invented sample, not a real government document. No AI model or database is connected here: answers come from the approved sample rules through fixed logic. This is guidance, not an official decision or legal advice.</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),inr=n=>"₹"+Number(n).toLocaleString("en-IN"),esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtD=d=>new Date(d+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"});
+const SRC={1:"Sample Notification SN-2025/01",2:"Sample Amendment SN-2026/07"};
+const R=[
+{id:"A1",k:"income",ver:1,lb:"Family annual income limit",op:"<=",v:250000,p:2,c:"4(a)",st:"active",cf:.98},
+{id:"A2",k:"marks",ver:1,lb:"Minimum marks",op:">=",v:60,p:2,c:"4(b)",st:"active",cf:.97},
+{id:"A3",k:"d-income",ver:1,lb:"Required document",v:"Income certificate",p:3,c:"6(i)",st:"active",cf:.96},
+{id:"A4",k:"d-marks",ver:1,lb:"Required document",v:"Marksheet",p:3,c:"6(ii)",st:"active",cf:.96},
+{id:"A5",k:"d-bank",ver:1,lb:"Required document",v:"Bank passbook copy",p:3,c:"6(iii)",st:"active",cf:.95},
+{id:"A6",k:"deadline",ver:1,lb:"Last date to apply",v:"2026-09-30",p:4,c:"8",st:"active",cf:.99},
+{id:"B1",k:"income",ver:2,lb:"Family annual income limit",op:"<=",v:300000,p:1,c:"2",st:"draft",cf:.91},
+{id:"B2",k:"d-enrol",ver:2,lb:"Required document",v:"Enrolment certificate",p:2,c:"3",st:"draft",cf:.84},
+{id:"B3",k:"deadline",ver:2,lb:"Last date to apply",v:"2026-12-15",p:2,c:"4",st:"draft",cf:.93}];
+const IMPACT={income:[["Eligibility condition","Income limit ₹2,50,000 → ₹3,00,000"],["Procedure step 2","Guidance text “check family income against the limit” uses the new limit"],["FormSathi check","Income threshold in the readiness check"],["Alerts","Re-check students earlier marked not eligible between ₹2.5 and ₹3.0 lakh"]],
+"d-enrol":[["Required documents","Add “Enrolment certificate” to the checklist"],["Procedure step 3","Add a step to obtain the enrolment certificate"],["FormSathi check","New document completeness check"]],
+deadline:[["Deadline tracker","30 Sep 2026 → 15 Dec 2026, reminders recalculated"],["Alerts","Notify applicants and administrators of the new date"]]};
+const IMP={},LOG=[];let lang="en",chat=null,fs=null,fv={d:[1,1,0,0],i:280000,m:72,n1:"Ravi Kumar",n2:"Ravi Kumar R"};
+const log=(a,o,s)=>LOG.unshift({t:new Date().toLocaleTimeString("en-IN"),a,o,s});
+const cite=r=>`${SRC[r.ver]} · p.${r.p} · cl.${r.c}`;
+const act=k=>R.filter(r=>r.k===k&&r.st==="active").sort((a,b)=>b.ver-a.ver)[0];
+const KEYS=[...new Set(R.map(r=>r.k))],docs=()=>KEYS.filter(k=>k.startsWith("d-")).map(act).filter(Boolean);
+const disp=r=>r.k==="income"?"≤ "+inr(r.v):r.k==="marks"?"≥ "+r.v+"%":r.k==="deadline"?fmtD(r.v):r.v;
+const CH={draft:"w",active:"o",applied:"o",proposed:"w",modified:"w",added:"",unchanged:"m",rejected:"e",superseded:"m"};
+const chip=t=>`<span class="chip ${CH[t]||""}">${t}</span>`;
+const ev=(x,op,lim)=>{if(x===""||x===null||isNaN(x))return"cannot_determine";x=+x;return(op==="<="?x<=lim:x>=lim)?"met":"not_met"};
+const norm=s=>s.trim().toLowerCase().replace(/\s+/g," ");
+const T={
+income:{en:r=>`Family annual income must be at most ${inr(r.v)}.`,te:r=>`కుటుంబ వార్షిక ఆదాయం ${inr(r.v)} లేదా అంతకంటే తక్కువ ఉండాలి.`},
+marks:{en:r=>`You need at least ${r.v}% marks.`,te:r=>`కనీసం ${r.v}% మార్కులు అవసరం.`},
+deadline:{en:r=>`Last date to apply: ${fmtD(r.v)}.`,te:r=>`దరఖాస్తుకు చివరి తేదీ: ${fmtD(r.v)}.`},
+docs:{en:l=>`Documents required: ${l.map(r=>r.v).join(", ")}.`,te:l=>`అవసరమైన పత్రాలు: ${l.map(r=>r.v).join(", ")}.`}};
+function answer(q){const s=q.toLowerCase(),pick=[];
+if(/deadline|last date|when|చివరి/.test(s))pick.push(["deadline",act("deadline")]);
+else if(/document|paper|certificate|పత్ర/.test(s))pick.push(["docs",docs()]);
+else if(/income|earn|salary|ఆదాయ/.test(s))pick.push(["income",act("income")]);
+else if(/mark|percent|grade|మార్క/.test(s))pick.push(["marks",act("marks")]);
+else if(/eligib|qualif|అర్హ/.test(s))pick.push(["income",act("income")],["marks",act("marks")]);
+if(!pick.length)return{ab:1,text:{en:"I can’t verify this from the approved rules in the system. Please check with the issuing authority or ask an administrator to add the official notification.",te:"ఆమోదించిన నియమాల నుండి దీన్ని నేను ధృవీకరించలేను. దయచేసి సంబంధిత అధికారిని సంప్రదించండి."},cites:[]};
+const rs=pick.flatMap(([k,x])=>Array.isArray(x)?x:[x]);
+return{ab:0,text:{en:pick.map(([k,x])=>T[k].en(x)).join(" "),te:pick.map(([k,x])=>T[k].te(x)).join(" ")},cites:rs.map(cite)}}
+const V={
+home(){const d=R.filter(r=>r.ver===2),n=d.filter(r=>r.st==="active").length;
+const steps=[["ruleweaver","RuleWeaver: compare the two notifications","See which rules were added, modified or unchanged, with page and clause."],["review","Human review: approve the changes","Extracted rules stay draft until a person approves them. "+n+" of "+d.length+" approved."],["ripple","Policy Ripple: see what each change affects","Approved changes are traced to eligibility, steps, documents, checks and alerts."],["jansetu","JanSetu: ask in English or Telugu","Answers use only approved rules and show their source."],["formsathi","FormSathi: check a sample application","Missing documents, name mismatches and income checks, with sources."],["whatif","What-If: change a value, see the outcome flip","Compare the old and new rules for the same applicant."],["audit","Audit: see who did what","Every approval and check is logged."]];
+return`<section class="hero"><canvas id="sc" aria-label="3D map: one rule connected to guidance, checks, eligibility, deadlines and alerts"></canvas><p class="kick">India’s rules, procedures and application readiness platform</p><h1>Understand the rules. Know what to do. Check before you submit.</h1><p class="mu">One scholarship, two versions of its notification. Watch a single rule change travel through guidance, checks, eligibility, deadlines and alerts. The 3D map lights up as you approve changes.</p><div class="row"><a href="#review"><button>Start the guided demo</button></a><a href="#ruleweaver"><button class="g">See the comparison</button></a></div></section><div class="stats">${[[R.length,"rules in the database"],[R.filter(r=>r.st==="draft").length,"awaiting review"],[R.filter(r=>r.st==="active").length,"active rules"],[Object.keys(IMP).length,"updates applied"],[LOG.length,"audit events"]].map(x=>`<div class="box stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("")}</div><ol class="flow">${steps.map(s=>`<li><a href="#${s[0]}">${s[1]}</a><div class="mu sm">${s[2]}</div></li>`).join("")}</ol><div class="box l"><b>Start here:</b> open Human review and approve the three changes, then ask JanSetu “What is the income limit?” before and after.</div>`},
+ruleweaver(){const dr=R.filter(r=>r.ver===2&&r.st==="draft").length;
+const rows=KEYS.map(k=>{const o=R.find(r=>r.k===k&&r.ver===1),n=R.find(r=>r.k===k&&r.ver===2),t=n?(o?"modified":"added"):"unchanged";
+return`<tr><td>${(o||n).lb}</td><td>${o?disp(o):"–"}</td><td>${n?(o?`<del>${disp(o)}</del> <ins>${disp(n)}</ins>`:`<ins>${disp(n)}</ins>`):"no change"}</td><td>${chip(t)}</td><td class="mu sm">${cite(n||o)}</td></tr>`}).join("");
+return`<h2>RuleWeaver</h2><p class="mu">Two notifications, six rules extracted from the first and three changes from the amendment.</p><div class="grid"><div class="box o"><h3>${SRC[1]}</h3>${chip("verified")}<div class="mu sm">6 rules extracted, all reviewed</div></div><div class="box w"><h3>${SRC[2]}</h3>${chip(dr?"unverified":"verified")}<div class="mu sm">${dr} draft rules awaiting review</div></div></div><h3 style="margin-top:18px">Version comparison</h3><div class="box tw"><table><tr><th>Rule</th><th>Old (v1)</th><th>Amendment (v2)</th><th>Change</th><th>Source</th></tr>${rows}</table></div><p class="mu sm">Conflicts and unclear replacements are never decided by the system. They go to human review.</p>`},
+review(){return`<h2>Human review queue</h2><p class="mu">Extracted rules stay draft. Only a reviewer’s approval makes a rule active and replaces the old version.</p>${R.some(r=>r.st==="draft")?`<button data-a="all">Approve all changes</button>`:""}${R.filter(r=>r.ver===2).map(r=>{const o=R.find(x=>x.k===r.k&&x.ver===1);
+return`<div class="box ${r.st==="draft"?"w":r.st==="active"?"o":""}"><div class="row"><h3 class="grow">${r.lb}: ${o?`<del>${disp(o)}</del> `:""}<ins>${disp(r)}</ins></h3>${chip(r.st)}</div><div class="mu sm">${cite(r)} · extraction confidence ${Math.round(r.cf*100)}%${r.cf<.9?" · <b>below 90%, check the page carefully</b>":""}</div>${r.st==="draft"?`<div class="row" style="margin-top:10px"><button data-a="ok" data-id="${r.id}">Approve</button><button class="d" data-a="no" data-id="${r.id}">Reject</button></div>`:""}</div>`}).join("")}`},
+ripple(){return`<h2>Policy Ripple Engine</h2><p class="mu">Select what a rule change touches. Only approved rules can be traced, and each update needs your confirmation.</p>${R.filter(r=>r.ver===2).map(r=>{if(r.st!=="active")return`<div class="box"><h3>${r.lb}</h3><div class="mu sm">${chip(r.st)} Approve this change in Human review first. Impact tracing uses only approved rules.</div></div>`;
+return`<div class="box l"><h3>${r.lb} changed to ${disp(r)}</h3><div class="mu sm">${cite(r)}</div><table style="min-width:0">${IMPACT[r.k].map((m,i)=>{const id=r.id+":"+i,s=IMP[id]||"proposed";return`<tr><td style="width:34%"><b>${m[0]}</b></td><td>${m[1]}</td><td style="text-align:right">${s==="applied"?chip("applied"):`<button class="g" data-a="ap" data-id="${id}" data-t="${m[0]}">Apply</button>`}</td></tr>`}).join("")}</table></div>`}).join("")}`},
+jansetu(){const qs=["What is the income limit?","Which documents do I need?","What is the last date?","Am I eligible?","Is there a hostel fee waiver?"];
+const a=chat?chat.res:null;
+return`<h2>JanSetu AI</h2><p class="mu">Answers come only from approved rules. If nothing approved covers the question, it says so.</p><div class="row"><button class="${lang==="en"?"":"g"}" data-a="lang" data-id="en">English</button><button class="${lang==="te"?"":"g"}" data-a="lang" data-id="te">తెలుగు</button></div><div class="row" style="margin-top:12px">${qs.map(q=>`<button class="g" data-a="chip" data-id="${esc(q)}">${q}</button>`).join("")}</div><div class="row" style="margin-top:12px"><input class="grow" type="text" id="q" placeholder="Ask about the sample scholarship" aria-label="Question"><button data-a="ask">Ask</button></div>${a?`<div class="box ${a.ab?"w":"o"}"><div class="mu sm">You asked: ${esc(chat.q)}</div><p style="margin:8px 0">${a.text[lang]}</p>${a.ab?chip("cannot verify"):a.cites.map(c=>`<span class="cite">${c}</span>`).join("")}</div>`:""}`},
+formsathi(){const all=["Income certificate","Marksheet","Bank passbook copy","Enrolment certificate"];
+return`<h2>FormSathi AI</h2><p class="mu">Check a sample application against the approved requirements. Use made-up details only.</p><div class="grid"><div class="box"><b>Documents uploaded</b>${all.map((d,i)=>`<label class="ck"><input type="checkbox" id="d${i}" ${fv.d[i]?"checked":""}>${d}</label>`).join("")}</div><div class="box"><label for="in">Family annual income (₹)</label><input type="number" id="in" value="${fv.i}"><label for="mk">Marks (%)</label><input type="number" id="mk" value="${fv.m}"><label for="n1">Name on income certificate</label><input type="text" id="n1" value="${esc(fv.n1)}"><label for="n2">Name on marksheet</label><input type="text" id="n2" value="${esc(fv.n2)}"></div></div><button data-a="check">Run readiness check</button>${fs?fs:""}`},
+whatif(){return`<h2>What-If Simulator</h2><p class="mu">Change one value and compare the old rules with the amendment for the same applicant.</p><div class="grid"><div class="box"><label for="wi">Family annual income (₹)</label><input type="number" id="wi" value="280000"><label for="wm">Marks (%)</label><input type="number" id="wm" value="72"></div></div><div id="wo"></div>`},
+audit(){return`<h2>Audit trail</h2><p class="mu">Approvals, applied updates and checks, newest first.</p>${LOG.length?`<div class="box tw"><table><tr><th>Time</th><th>Action</th><th>Object</th><th>Source</th></tr>${LOG.map(l=>`<tr><td>${l.t}</td><td>${l.a}</td><td>${esc(l.o)}</td><td class="mu sm">${l.s}</td></tr>`).join("")}</table></div>`:`<div class="box mu">Nothing recorded yet. Approve a rule in Human review to create the first entry.</div>`}`}};
+function wi(){const o=$("#wo");if(!o)return;const i=$("#wi").value,m=$("#wm").value,a1=R.find(r=>r.id==="A1"),b1=R.find(r=>r.id==="B1"),a2=R.find(r=>r.id==="A2");
+const rows=[["Income",i,a1,b1],["Marks",m,a2,a2]].map(([n,x,old,nw])=>[n,ev(x,old.op,old.v),ev(x,nw.op,nw.v),old,nw]);
+const ok=(c)=>c==="met"?chip("active").replace("active","met"):c==="not_met"?`<span class="chip e">not met</span>`:chip("unchanged").replace("unchanged","enter a value");
+const all=c=>c.every(v=>v==="met"),before=all(rows.map(r=>r[1])),after=all(rows.map(r=>r[2]));
+o.innerHTML=`<div class="box tw"><table><tr><th>Condition</th><th>Old rules (v1)</th><th>Amendment (v2) ${b1.st==="active"?"":chip("not approved yet")}</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td>${disp(r[3])} ${ok(r[1])}</td><td>${disp(r[4])} ${ok(r[2])}</td></tr>`).join("")}</table></div><div class="box ${before!==after?"w":"l"}"><b>${before!==after?"The outcome changes.":"The outcome is the same."}</b> Old rules: ${before?"all conditions met":"not all conditions met"}. Amendment: ${after?"all conditions met":"not all conditions met"}.</div>`}
+function check(){fv={d:[0,1,2,3].map(i=>$("#d"+i).checked?1:0),i:$("#in").value,m:$("#mk").value,n1:$("#n1").value,n2:$("#n2").value};const need=docs().map(r=>r.v),all=["Income certificate","Marksheet","Bank passbook copy","Enrolment certificate"],have=all.filter((d,i)=>$("#d"+i).checked),done=[],miss=[],unc=[];
+need.forEach(d=>(have.includes(d)?done:miss).push(d));
+const i=ev($("#in").value,"<=",act("income").v),m=ev($("#mk").value,">=",act("marks").v),n1=$("#n1").value,n2=$("#n2").value;
+(i==="met"?done:i==="not_met"?miss:unc).push(i==="met"?"Income within "+inr(act("income").v):i==="not_met"?"Income is above the "+inr(act("income").v)+" limit":"Income not entered");
+(m==="met"?done:m==="not_met"?miss:unc).push(m==="met"?"Marks meet the minimum":m==="not_met"?"Marks below the minimum of "+act("marks").v+"%":"Marks not entered");
+if(!n1||!n2)unc.push("Names not entered for comparison");else if(norm(n1)!==norm(n2))unc.push(`Name differs: “${esc(n1)}” vs “${esc(n2)}”, verify both documents`);else done.push("Names match across documents");
+const g=(t,c,l)=>`<div class="box ${c}"><b>${t}</b><ul class="x">${l.length?l.map(x=>`<li>${x}</li>`).join(""):"<li class=\"mu\">None</li>"}</ul></div>`;
+fs=`<h3 style="margin-top:18px">Readiness report</h3>${g("Completed","o",done)}${g("Missing or not met","w",miss)}${g("Uncertain, needs review","l",unc)}<p class="mu sm">Sources: ${[...new Set(docs().concat(act("income"),act("marks")).map(cite))].join("; ")}. This report shows what the system could verify. It does not say the authority will accept the application.</p>`;
+log("Readiness check run","Sample application",done.length+" completed, "+miss.length+" missing, "+unc.length+" uncertain");render()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,id=b.dataset.id,r=R.find(x=>x.id===id);
+if(a==="ok"){r.st="active";const o=R.find(x=>x.k===r.k&&x.ver===1);if(o)o.st="superseded";log("Rule approved",r.lb+" → "+disp(r),cite(r))}
+else if(a==="all"){R.filter(x=>x.ver===2&&x.st==="draft").forEach(r=>{r.st="active";const o=R.find(x=>x.k===r.k&&x.ver===1);if(o)o.st="superseded";log("Rule approved",r.lb+" → "+disp(r),cite(r))})}
+else if(a==="no"){r.st="rejected";log("Rule rejected",r.lb,cite(r))}
+else if(a==="ap"){IMP[id]="applied";log("Impact update applied",b.dataset.t,"Policy Ripple · rule "+id.split(":")[0])}
+else if(a==="lang")lang=id;
+else if(a==="chip"||a==="ask"){const q=a==="chip"?id:$("#q").value.trim();if(!q)return;chat={q,res:answer(q)};log("Question answered",q,chat.res.ab?"No approved evidence, abstained":chat.res.cites[0])}
+else if(a==="check")return check();if(a==="ok"||a==="all"||a==="ap")pulse();render()});
+document.addEventListener("input",e=>{if(e.target.id==="wi"||e.target.id==="wm")wi()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="q")document.querySelector('[data-a="ask"]').click()});
+const NAV=[["home","Overview"],["ruleweaver","RuleWeaver"],["review","Review"],["ripple","Policy Ripple"],["jansetu","JanSetu"],["formsathi","FormSathi"],["whatif","What-If"],["audit","Audit"]],ORD=NAV.map(x=>x[0]),LB=Object.fromEntries(NAV);
+document.addEventListener("pointermove",e=>{const b=e.target.closest&&e.target.closest(".box:not(.tw)");if(!b||matchMedia("(prefers-reduced-motion:reduce)").matches)return;const r=b.getBoundingClientRect();b.style.setProperty("--ry",((e.clientX-r.left)/r.width-.5)*6+"deg");b.style.setProperty("--rx",(.5-(e.clientY-r.top)/r.height)*6+"deg")});
+document.addEventListener("pointerout",e=>{const b=e.target.closest&&e.target.closest(".box");if(b){b.style.removeProperty("--rx");b.style.removeProperty("--ry")}});
+let PU=0,stopScene=null;const pulse=()=>{PU=1};
+function scene(){const cv=$("#sc");if(!cv||typeof THREE==="undefined")return null;
+try{const W=()=>cv.clientWidth,H=()=>cv.clientHeight,rd=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});rd.setPixelRatio(Math.min(devicePixelRatio,2));
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,50);cam.position.set(0,.6,7.5);
+const cs=getComputedStyle(document.documentElement),C=n=>new THREE.Color(cs.getPropertyValue(n).trim()),ac=C("--ac"),am=C("--am"),mu=C("--mu"),g=new THREE.Group();sc.add(g);
+const core=new THREE.Mesh(new THREE.IcosahedronGeometry(.8,1),new THREE.MeshBasicMaterial({color:ac,wireframe:true}));g.add(core);g.add(new THREE.Mesh(new THREE.SphereGeometry(.35,24,24),new THREE.MeshBasicMaterial({color:am})));
+const sats=[];["JanSetu","FormSathi","Eligibility","Deadlines","Alerts"].forEach((n,i)=>{const a=i/5*Math.PI*2,m=new THREE.Mesh(new THREE.SphereGeometry(.2,20,20),new THREE.MeshBasicMaterial({color:mu}));m.position.set(Math.cos(a)*2.3,Math.sin(i*1.7)*.9,Math.sin(a)*2.3);g.add(m);sats.push(m);
+const t=document.createElement("canvas");t.width=256;t.height=64;const x=t.getContext("2d");x.font="600 30px system-ui";x.fillStyle=cs.getPropertyValue("--tx").trim();x.textAlign="center";x.fillText(n,128,42);
+const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(t),transparent:true}));sp.scale.set(1.6,.4,1);sp.position.copy(m.position);sp.position.y+=.42;g.add(sp);
+g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),m.position]),new THREE.LineBasicMaterial({color:mu,transparent:true,opacity:.5})))});
+const rings=[0,1,2].map(i=>{const r=new THREE.Mesh(new THREE.RingGeometry(.97,1,64),new THREE.MeshBasicMaterial({color:ac,transparent:true,side:2}));r.rotation.x=Math.PI/2;r.userData.p=i/3;g.add(r);return r});
+let mx=0,my=0,t0=0,id;const mv=e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5};addEventListener("pointermove",mv);
+const rs=()=>{rd.setSize(W(),H(),false);cam.aspect=W()/H();cam.updateProjectionMatrix();g.position.x=W()>700?2.4:0};rs();addEventListener("resize",rs);
+const still=matchMedia("(prefers-reduced-motion:reduce)").matches;
+const tick=()=>{t0+=.01;PU*=.985;const n=R.filter(r=>r.ver===2&&r.st==="active").length;g.rotation.y=t0*.4+mx*.8;g.rotation.x=my*.4;core.rotation.y=-t0*1.5;
+sats.forEach((m,i)=>{const on=i<n*2;m.material.color.copy(on?ac:mu);m.scale.setScalar(1+(on?PU*.8:0))});
+rings.forEach(r=>{const p=(r.userData.p+t0*.12*(1+PU*4))%1;r.scale.setScalar(.8+p*3.4);r.material.opacity=(1-p)*(.3+PU*.5)});
+rd.render(sc,cam);if(!still)id=requestAnimationFrame(tick)};tick();
+return()=>{cancelAnimationFrame(id);removeEventListener("pointermove",mv);removeEventListener("resize",rs);rd.dispose()}}catch(e){return null}}
+function render(){if(stopScene){stopScene();stopScene=null}const h=(location.hash||"#home").slice(1),v=Object.hasOwn(V,h)?h:"home";
+$("#nav").innerHTML=NAV.map(([k,n])=>`<a href="#${k}" class="${k===v?"on":""}">${n}</a>`).join("");
+$("#app").innerHTML=V[v]();if(v==="whatif")wi();const i=ORD.indexOf(v);
+$("#app").insertAdjacentHTML("beforeend",`<div class="nx">${i>0?`<a href="#${ORD[i-1]}"><button class="g">‹ ${LB[ORD[i-1]]}</button></a>`:"<span></span>"}${i<ORD.length-1?`<a href="#${ORD[i+1]}"><button>${LB[ORD[i+1]]} ›</button></a>`:""}</div>`);if(v==="home")stopScene=scene()}
+addEventListener("hashchange",()=>{fs=null;render()});render();
+</script></body></html>

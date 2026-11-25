@@ -1,0 +1,1098 @@
+==============================================================================
+                              NIYAMSETU AI
+          India's Intelligent Rules, Procedures & Application Readiness
+                                  Platform
+==============================================================================
+Tagline  : Understand the rules. Know what to do. Check before you submit.
+Document : MASTER PROJECT SCOPE (final version of the project idea)
+Owner    : Snehith
+Status   : Planning complete, ready for architecture and build
+==============================================================================
+
+HOW TO READ THIS DOCUMENT
+------------------------------------------------------------------------------
+If you are new to the project, read sections 1 to 4 first. They explain the
+problem, the idea, and the one feature that makes this project different.
+Sections 5 to 11 describe every module in detail. Sections 12 onward cover
+the technical design, the build plan and the demo.
+
+
+TABLE OF CONTENTS
+------------------------------------------------------------------------------
+ 1.  The idea in simple words
+ 2.  The problem we are solving
+ 3.  What NiyamSetu AI is (and is not)
+ 4.  The signature innovation: Policy Ripple Engine
+ 5.  Complete module structure (the tree)
+ 6.  Foundation: Unified Rules Intelligence Engine
+ 7.  Core modules
+       7.1  RuleWeaver
+       7.2  JanSetu AI
+       7.3  FormSathi AI
+ 8.  Signature module: Policy Ripple Engine
+ 9.  Supporting modules
+       9.1  Scheme Eligibility Finder
+       9.2  What-If Simulator
+       9.3  Smart Deadline & Compliance Tracker
+       9.4  Grievance & RTI Assistant
+10.  Trust and verification layer
+       10.1 Human Review Queue
+       10.2 Transparency & Audit Dashboard
+       10.3 Official Source Monitor
+       10.4 Document Authenticity & Source Check
+11.  Users and roles
+12.  Website pages and screens
+13.  Technical architecture and technology stack
+14.  Data model (database tables)
+15.  How the pieces work together: a full walkthrough
+16.  Security, privacy and responsible AI rules
+17.  Technical challenges and solutions
+18.  What we build first (priority and scope)
+19.  Development roadmap (solo build)
+20.  Demo plan
+21.  Testing and evaluation
+22.  Risks and mitigation
+23.  What was removed and why
+24.  Final decisions
+25.  Glossary
+26.  One-minute pitch
+
+
+==============================================================================
+1. THE IDEA IN SIMPLE WORDS
+==============================================================================
+
+Government departments and institutions publish rules as long, complicated
+documents: notifications, circulars and orders. Ordinary people cannot easily
+understand them, and institutions struggle to keep up when they change.
+
+NiyamSetu AI reads those official documents and does four things:
+
+   1. UNDERSTANDS the rules  (what is required, by whom, by when)
+   2. GUIDES people          (what exactly should I do?)
+   3. CHECKS applications    (is my application ready to submit?)
+   4. TRACKS CHANGES         (when a rule changes, what else is affected?)
+
+Everything is backed by the original document: every answer shows which
+document, which page and which clause it came from.
+
+We start with ONE area: education and scholarships. Once it works reliably
+there, it can expand to other government services.
+
+
+==============================================================================
+2. THE PROBLEM WE ARE SOLVING
+==============================================================================
+
+Five connected problems:
+
+ 1. People struggle to understand long official notifications.
+    Language is legalistic, documents are long, many are scanned images.
+
+ 2. People do not know which rules are current or what has changed.
+    A new notification may modify an old one without restating it.
+
+ 3. People do not know which schemes they qualify for or what steps to
+    follow.
+    Benefits go unclaimed because people never find or understand them.
+
+ 4. Applications fail because of missing or inconsistent documents.
+    Name mismatches, expired certificates, unreadable scans. Often found
+    only after submission, sometimes too late.
+
+ 5. Institutions struggle to track rule changes, deadlines and affected
+    procedures.
+    When one rule changes, nobody knows exactly which forms, checklists and
+    guidance need updating.
+
+Most existing tools only address problem 1 (a chatbot or a PDF summariser).
+NiyamSetu AI addresses the whole chain.
+
+
+==============================================================================
+3. WHAT NIYAMSETU AI IS (AND IS NOT)
+==============================================================================
+
+IT IS
+  - A platform that turns official documents into understandable, actionable
+    and verifiable guidance.
+  - One shared rules engine that powers every feature.
+  - An evidence-based system: every output points to its official source.
+  - A tool with a human review step wherever the AI is unsure.
+
+IT IS NOT
+  - A general chatbot.
+  - A legal advisor. It does not give legal advice.
+  - An official authority. It cannot promise that an application will be
+    accepted.
+  - A collection of unrelated AI tools. Every module reads from and writes
+    to the same rules engine.
+
+Important design stance
+  The project is "an intelligent rule-to-action platform", not "a bunch of AI
+  features". Fewer, deeper, connected features are stronger than many
+  separate ones.
+
+
+==============================================================================
+4. THE SIGNATURE INNOVATION: POLICY RIPPLE ENGINE
+==============================================================================
+
+This is the feature that makes NiyamSetu AI different from every normal
+"chat with a PDF" tool.
+
+THE IDEA
+  When one government rule changes, its effects do not stay inside a PDF.
+  The platform traces the change through everything that depends on it.
+
+EXAMPLE
+  An official scholarship notification changes its income limit.
+
+    Step 1  RuleWeaver detects the change.
+    Step 2  The system identifies which schemes and procedures are affected.
+    Step 3  JanSetu updates its explanation and eligibility guidance.
+    Step 4  FormSathi updates the relevant application checks.
+    Step 5  The Eligibility Finder re-evaluates who qualifies.
+    Step 6  Deadline and compliance tasks are reviewed for changes.
+    Step 7  Affected users and institutions receive an alert.
+
+  Everything goes through human review before it becomes active, and every
+  step keeps its source reference.
+
+THE FLOW AT A GLANCE
+
+   Official notification published (new or amended rule)
+                     |
+                     v
+              RuleWeaver
+      extracts and identifies the change
+                     |
+                     v
+         Human Review Queue (verify)
+                     |
+                     v
+          POLICY RIPPLE ENGINE
+     traces everything affected by the change
+        |          |           |            |
+        v          v           v            v
+    JanSetu    FormSathi   Eligibility   Deadline
+    updates    updates     Finder        Tracker
+    guidance   checks      rechecks      reviews tasks
+        \          |           |            /
+         \_________|___________|___________/
+                     |
+                     v
+      Verified updates and change alerts
+      (with source references, human review where required)
+
+WHY IT MATTERS
+  A normal AI tool answers questions about a notification.
+  NiyamSetu AI tracks how that notification affects the actual process.
+
+HONEST NOTE
+  This is a proposed capability. We do not claim it works automatically
+  until it has been implemented and tested. The first version will be a
+  limited, working version focused on one scholarship scheme.
+
+
+==============================================================================
+5. COMPLETE MODULE STRUCTURE (THE TREE)
+==============================================================================
+
+NiyamSetu AI
+|
++-- FOUNDATION
+|     +-- Unified Rules Intelligence Engine  (the shared brain)
+|
++-- CORE MODULES
+|     +-- 01  RuleWeaver        : Understand official rules
+|     +-- 02  JanSetu AI        : Explain rules and guide people
+|     +-- 03  FormSathi AI      : Check applications before submission
+|
++-- SIGNATURE INNOVATION
+|     +-- 04  Policy Ripple Engine : Trace what a rule change affects
+|
++-- SUPPORTING MODULES
+|     +-- 05  Scheme Eligibility Finder
+|     +-- 06  What-If Simulator
+|     +-- 07  Smart Deadline & Compliance Tracker
+|     +-- 08  Grievance & RTI Assistant
+|
++-- TRUST AND VERIFICATION LAYER
+      +-- 09  Human Review Queue
+      +-- 10  Transparency & Audit Dashboard
+      +-- 11  Official Source Monitor
+      +-- 12  Document Authenticity & Source Check
+
+IDENTITY IN FIVE WORDS
+  UNDERSTAND (RuleWeaver)   - understands official rules
+  GUIDE      (JanSetu)      - tells people what to do
+  VALIDATE   (FormSathi)    - checks application readiness
+  CONNECT    (Policy Ripple) - tracks how changes affect the process
+  TRUST      (Review + evidence) - makes the results verifiable
+
+
+==============================================================================
+6. FOUNDATION: UNIFIED RULES INTELLIGENCE ENGINE
+==============================================================================
+
+The shared brain. Every module uses it. There are no separate AI systems and
+no separate copies of the rules.
+
+WHAT IT DOES
+  - Reads official PDFs and notifications.
+  - Extracts rules, conditions and deadlines.
+  - Stores source, page and clause references.
+  - Tracks document versions and effective dates.
+  - Identifies possible conflicts.
+  - Keeps uncertain rules pending human verification.
+
+6.1 DOCUMENT INGESTION
+  Input    : text PDFs, scanned PDFs, images.
+  Steps    :
+    a. Check whether the PDF has selectable text.
+    b. If yes, extract the text with page numbers.
+    c. If no, run OCR (English first, Telugu where needed).
+    d. Record how confident the extraction is, per page.
+    e. Store the original file unchanged, plus the extracted text.
+
+6.2 DOCUMENT METADATA
+  For every document we record: title, document number, issuing authority,
+  publication date, effective date, jurisdiction, subject, whether it says
+  it amends or replaces another document, source, and verification status.
+
+6.3 RULE EXTRACTION
+  The AI converts text into structured rule records. Each rule has:
+    - type (eligibility condition, required document, deadline, obligation,
+      benefit amount, procedure step, exception)
+    - the condition in words
+    - a machine-readable form: field, operator, value
+      (example: field = family_income, operator = <=, value = 250000)
+    - who it applies to, and for which scheme
+    - source document, page and clause
+    - extraction confidence
+  New rules start as DRAFT. They become ACTIVE only after review.
+
+6.4 VERSIONING AND EFFECTIVE DATES
+  Each rule has valid-from and valid-to dates. The system can answer "what is
+  the rule today" and "what was the rule on a given date". Old versions are
+  kept for history.
+
+6.5 CONFLICT HANDLING
+  The system looks at: issuing authority, publication date, effective date,
+  jurisdiction, whether one document explicitly amends or supersedes another,
+  and whether they cover the same subject.
+  If the answer is not clear, the case goes to a human. The AI never decides
+  alone that a rule is invalid or that one notification overrides another.
+
+6.6 EVIDENCE RETRIEVAL
+  Answers are built only from retrieved rule text. If no supporting evidence
+  is found, the system says so instead of guessing.
+
+6.7 ELIGIBILITY EVALUATION
+  Conditions that have a field, operator and value are checked by ordinary
+  code, not by the AI model. The AI extracts and explains. Code calculates.
+
+
+==============================================================================
+7. CORE MODULES
+==============================================================================
+
+------------------------------------------------------------------------------
+7.1  MODULE 01: RULEWEAVER  -  "Understand official rules"
+------------------------------------------------------------------------------
+Who uses it : administrators, reviewers.
+
+What it does
+  - Upload circulars and notifications.
+  - Extract rules and eligibility conditions.
+  - Compare old and new notifications.
+  - Highlight added, removed and modified rules.
+  - Flag possible conflicts for human review.
+  - Generate compliance checklists.
+
+Inputs  : PDF or image documents with their basic details.
+Outputs : structured rule list, change report (old vs new), conflict flags,
+          draft checklist.
+
+Screens : upload page, document viewer with highlighted rules, comparison
+          view, conflict list.
+
+How it works
+  Upload -> extract text -> extract rules -> reviewer checks -> rules
+  become active -> compare with the earlier version -> change report ->
+  hand the change to the Policy Ripple Engine.
+
+Problem solved
+  Hidden or changed requirements; unclear which rule is current; slow,
+  manual document comparison.
+
+------------------------------------------------------------------------------
+7.2  MODULE 02: JANSETU AI  -  "Explain rules and guide people"
+------------------------------------------------------------------------------
+Who uses it : students, citizens.
+
+What it does
+  - Ask questions in English or Telugu.
+  - Explain rules in simple language.
+  - Show eligibility conditions.
+  - Generate personalised step-by-step procedures.
+  - Explain required documents.
+  - Show the official sources behind every answer.
+
+Inputs  : the user's question, and optional personal details they choose to
+          enter (course, category, income range, state).
+Outputs : plain-language answer with source citations, personalised
+          checklist, step-by-step guide.
+
+Screens : ask-anything box, procedure page with step tracker, document
+          explainer.
+
+How it works
+  Question -> engine fetches CURRENT approved rules -> AI writes an answer
+  using only those rules -> answer shown in the user's language with
+  citations.
+
+Rules for this module
+  - Only approved (active) rules are used.
+  - If a scheme is not in the system, it says so.
+  - Every answer shows "Source: document, page, clause".
+
+Problem solved
+  People cannot understand procedures or eligibility, especially in their own
+  language.
+
+------------------------------------------------------------------------------
+7.3  MODULE 03: FORMSATHI AI  -  "Check applications before submission"
+------------------------------------------------------------------------------
+Who uses it : students, applicants.
+
+What it does
+  - Upload application documents.
+  - Identify missing documents.
+  - Check mismatched information (name, date of birth, parents' names,
+    income figures, institution).
+  - Check document readability and expiry where applicable.
+  - Compare documents with the official requirements.
+  - Generate an application-readiness report.
+
+Inputs  : chosen scheme, uploaded documents (for the demo, synthetic ones).
+Outputs : readiness report in three groups:
+            - Completed requirements
+            - Missing requirements
+            - Uncertain items needing review
+          Every item explains what, why it matters, and which official
+          clause requires it.
+
+Screens : scheme selector, upload area, side-by-side field comparison,
+          readiness report.
+
+How it works
+  Choose scheme -> engine loads the current requirements -> upload documents
+  -> extract fields from them -> compare with the requirements and with each
+  other -> report.
+
+Critical rule
+  The report NEVER says "your application will be accepted". It says "based
+  on the requirements we verified, this appears ready" or lists the gaps.
+  Final acceptance always belongs to the authority.
+
+Problem solved
+  Rejections caused by missing or inconsistent documents, discovered too
+  late.
+
+
+==============================================================================
+8. SIGNATURE MODULE: MODULE 04 - POLICY RIPPLE ENGINE
+==============================================================================
+
+Purpose
+  Show what happens when one government rule changes.
+
+Who uses it : administrators and reviewers (main view); students see the
+              results as updated guidance and alerts.
+
+HOW IT WORKS TECHNICALLY
+  1. Every rule is stored with LINKS to the things that depend on it:
+       - eligibility conditions
+       - procedure steps
+       - required documents
+       - application checks (FormSathi)
+       - deadlines and tasks
+       - affected users and institutions
+  2. When RuleWeaver detects a change in a rule, the engine looks up all
+     links of that rule.
+  3. It builds an IMPACT REPORT: a list of every linked item with the
+     proposed update (old text -> new text).
+  4. The report goes to the Human Review Queue.
+  5. After approval, the linked items are updated and affected users are
+     alerted.
+
+WHAT IT SHOWS
+  - A "ripple view": the changed rule in the centre, and everything affected
+    around it, grouped by type.
+  - For each affected item: what changes, why, and the source clause.
+  - Status per item: proposed / approved / applied / rejected.
+
+EXAMPLE OUTPUT (income limit raised from 2.5 lakh to 3.0 lakh)
+  Changed rule          : Family income limit 2.5 lakh -> 3.0 lakh
+  Affected eligibility  : Income condition for Scheme X
+  Affected procedure    : Step 2 "Obtain income certificate" (guidance text)
+  Affected documents    : Income certificate validity wording
+  Affected app checks   : FormSathi income check threshold
+  Affected deadlines    : Re-opening of applications (to be reviewed)
+  Affected users        : Students previously marked "not eligible"
+
+FIRST VERSION SCOPE (realistic)
+  - One scholarship scheme.
+  - Links between rules, eligibility conditions, procedure steps, required
+    documents and FormSathi checks.
+  - Impact report plus review and approval.
+  - Alerts and deadline review added if time allows.
+
+Problem solved
+  A rule change normally stays buried in a PDF and nobody knows what else
+  must change. This makes the effect visible and traceable.
+
+
+==============================================================================
+9. SUPPORTING MODULES
+==============================================================================
+
+------------------------------------------------------------------------------
+9.1  MODULE 05: SCHEME ELIGIBILITY FINDER
+------------------------------------------------------------------------------
+  - Finds schemes that match information the user chooses to provide.
+  - Shows each scheme as: likely eligible / possibly eligible (some
+    information missing) / not eligible.
+  - Explains the exact conditions behind each result.
+  - Connects directly to JanSetu for the steps.
+  Problem solved: people do not know which schemes they qualify for.
+  Limit: only covers schemes whose documents are in the system.
+
+------------------------------------------------------------------------------
+9.2  MODULE 06: WHAT-IF SIMULATOR
+------------------------------------------------------------------------------
+  - Change an eligibility value or a rule condition.
+  - Compare the result before and after.
+  - Explain exactly which condition changed the outcome.
+  Two uses:
+    (a) Student: "What if my family income changes?"
+    (b) Administrator: "What if the income limit changes?" (preview before
+        a change is approved, works well alongside Policy Ripple)
+  Problem solved: people and administrators cannot see how a change affects
+  the result.
+
+------------------------------------------------------------------------------
+9.3  MODULE 07: SMART DEADLINE & COMPLIANCE TRACKER
+------------------------------------------------------------------------------
+  - Extract deadlines from official rules.
+  - Create checklists and reminders.
+  - Track pending tasks and completion status.
+  - When a rule changes, affected deadlines are flagged for review.
+  Problem solved: missed deadlines and incomplete submissions.
+
+------------------------------------------------------------------------------
+9.4  MODULE 08: GRIEVANCE & RTI ASSISTANT
+------------------------------------------------------------------------------
+  - Help draft grievance letters and RTI applications.
+  - Reference the relevant official clauses.
+  - Explain the general submission procedure.
+  Limit: drafts are starting points for the user to review. Not legal
+  advice.
+  Problem solved: people do not know how to challenge a decision or ask for
+  information.
+
+
+==============================================================================
+10. TRUST AND VERIFICATION LAYER
+==============================================================================
+
+------------------------------------------------------------------------------
+10.1  MODULE 09: HUMAN REVIEW QUEUE
+------------------------------------------------------------------------------
+  - Review uncertain extracted rules.
+  - Approve or reject proposed rule changes.
+  - Resolve possible conflicts.
+  Items go to the queue when:
+    - extraction confidence is low,
+    - two documents seem to conflict,
+    - it is unclear whether one document replaces another,
+    - a rule or an impact report is about to become active.
+  Reviewer actions: approve, edit, reject, add a note.
+  Rule: unverified rules must never silently become active.
+
+------------------------------------------------------------------------------
+10.2  MODULE 10: TRANSPARENCY & AUDIT DASHBOARD
+------------------------------------------------------------------------------
+  - Show where an answer came from.
+  - Show which rule was used.
+  - Track changes and review decisions.
+  - Record important administrative actions (who did what, when).
+  Problem solved: AI answers cannot be trusted without a visible evidence
+  trail.
+
+------------------------------------------------------------------------------
+10.3  MODULE 11: OFFICIAL SOURCE MONITOR
+------------------------------------------------------------------------------
+  - Monitor a selected list of official sources.
+  - Identify newly published or updated documents.
+  - Send them for verification before use.
+  A newly discovered document is NEVER treated as authoritative until it has
+  been reviewed.
+
+------------------------------------------------------------------------------
+10.4  MODULE 12: DOCUMENT AUTHENTICITY & SOURCE CHECK
+------------------------------------------------------------------------------
+  - Check whether a document matches an available official publication.
+  - Flag missing or inconsistent source details (document number, date,
+    authority).
+  - Possible results: "matches an official source", "not found in the
+    official sources we monitor", "may be outdated".
+  Critical rule: never claim that an automated check proves a document is
+  genuine, and never claim it proves one is fake.
+
+
+==============================================================================
+11. USERS AND ROLES
+==============================================================================
+
+MAIN USERS
+  Students / citizens  - understand rules, find schemes, check applications.
+  Administrators       - upload documents, review rules, manage changes.
+
+ROLES IN THE SYSTEM
+  Student/Citizen : ask questions, use finder and simulator, upload own
+                    documents for checks, see own deadlines and alerts.
+                    Cannot see other users' data or edit rules.
+  Administrator   : upload notifications, review and approve rules and
+                    impact reports, manage procedures and checklists, see
+                    the audit dashboard.
+  Platform admin  : manage users and roles, manage monitored sources,
+                    system settings.
+
+Every action is checked against the role. Sensitive actions are logged.
+
+
+==============================================================================
+12. WEBSITE PAGES AND SCREENS
+==============================================================================
+
+PUBLIC
+  - Landing page: vision, the five-word identity, how it works, demo video.
+  - Sign in / sign up.
+
+STUDENT / CITIZEN AREA
+  - Home: "What would you like to do?" with an ask-anything box and four
+    quick actions (Explore Rules, Find a Procedure, Check My Application,
+    Find Schemes).
+  - Ask page (English / Telugu toggle, citations shown on every answer).
+  - Procedure page with step tracker.
+  - Scheme Eligibility Finder.
+  - What-If Simulator.
+  - Application readiness check (upload, comparison, report).
+  - My deadlines and alerts.
+  - Grievance & RTI helper.
+
+ADMINISTRATOR AREA
+  - Dashboard: documents, changes to review, pending actions.
+  - Upload and document library.
+  - Rule viewer with highlighted source text.
+  - Compare versions.
+  - Human Review Queue.
+  - Policy Ripple view (the ripple map and impact report).
+  - Procedure and checklist manager.
+  - Deadline and compliance tracker.
+  - Audit dashboard.
+
+PLATFORM ADMIN AREA
+  - Users and roles.
+  - Monitored sources.
+
+DESIGN NOTES
+  - Must look like a governance and compliance platform, not a plain
+    chatbot.
+  - Clean, readable, mobile friendly, with the language switch always
+    visible.
+  - Every AI output shows a "Source" chip that opens the exact document
+    page.
+  - Review status and confidence are visible, not hidden.
+  - Any dashboard numbers in demos are labelled as illustrative.
+
+
+==============================================================================
+13. TECHNICAL ARCHITECTURE AND TECHNOLOGY STACK
+==============================================================================
+
+PRINCIPLE
+  One shared backend and one permanent database. No separate AI engine per
+  module.
+
+STACK
+  Frontend            : Next.js + Tailwind CSS
+  Backend             : Next.js server-side APIs (initially)
+  Database            : Supabase PostgreSQL
+  Authentication      : Supabase Auth
+  File storage        : Supabase Storage
+  AI                  : Gemini API
+  Document processing : PDF text extraction first; OCR for scanned files
+  Deployment          : Vercel
+  Graph database      : not needed in the first version; normal relational
+                        tables with link tables are enough
+  Optional later      : vector search (pgvector in Supabase) if keyword and
+                        structured search are not enough
+
+LAYERS
+  1. Interface        : pages for students and administrators.
+  2. Module layer     : RuleWeaver, JanSetu, FormSathi, Policy Ripple and
+                        the supporting modules.
+  3. Engine layer     : the Unified Rules Intelligence Engine (extraction,
+                        versioning, links, evidence, eligibility code).
+  4. Data layer       : PostgreSQL tables and file storage.
+
+DESIGN CHOICES
+  - Eligibility checks are done by code from structured rules; the AI model
+    is used for extraction, explanation and drafting.
+  - The AI call is wrapped in one place so the model can be changed later.
+  - Prompts, AI outputs and the rules they produced are logged.
+
+
+==============================================================================
+14. DATA MODEL (DATABASE TABLES)
+==============================================================================
+
+profiles
+  id, name, email, role, language_preference, created_at
+
+documents
+  id, title, doc_number, authority, jurisdiction, publication_date,
+  effective_date, subject, file_path, source_url, verification_status,
+  uploaded_by, created_at
+
+document_pages
+  id, document_id, page_number, text, extraction_confidence
+
+schemes
+  id, name, authority, description, active
+
+rules
+  id, document_id, scheme_id, rule_type, condition_text, field, operator,
+  value, applies_to, page_number, clause_reference, confidence,
+  status (draft / active / superseded), valid_from, valid_to
+
+rule_changes
+  id, old_rule_id, new_rule_id, change_type (added / removed / modified),
+  summary, detected_at, review_status
+
+rule_links   (the backbone of the Policy Ripple Engine)
+  id, rule_id, linked_type (eligibility / procedure_step / required_document
+  / application_check / deadline), linked_id
+
+impact_reports
+  id, rule_change_id, generated_at, status
+
+impact_items
+  id, impact_report_id, linked_type, linked_id, old_text, proposed_text,
+  status (proposed / approved / applied / rejected)
+
+procedures / procedure_steps
+  id, scheme_id, order_number, title, description, linked_rule_id
+
+required_documents
+  id, scheme_id, name, description, linked_rule_id
+
+applications / application_files
+  id, user_id, scheme_id, file_path, document_type, extracted_fields,
+  extraction_confidence
+
+readiness_reports
+  id, application_id, generated_at, completed, missing, uncertain
+
+deadlines / tasks
+  id, rule_id, title, due_date, owner_id, status
+
+alerts
+  id, user_id, rule_change_id, priority, message, read, created_at
+
+review_queue
+  id, item_type, item_id, reason, assigned_to, status, decision, note
+
+audit_log
+  id, actor_id, action, object_type, object_id, details, timestamp
+
+sources (monitor)
+  id, name, url, check_frequency, last_checked, active
+
+Privacy note: users and application_files hold personal data and need strict
+access control. For the demo, only synthetic personal documents are used.
+
+
+==============================================================================
+15. HOW THE PIECES WORK TOGETHER: A FULL WALKTHROUGH
+==============================================================================
+
+Scenario: one scholarship scheme, two versions of its official notification.
+
+ 1. UPLOAD
+    The administrator uploads the old and the new notification.
+
+ 2. EXTRACT
+    The engine extracts the text, then the rules, each with page and clause
+    references and a confidence score.
+
+ 3. COMPARE (RuleWeaver)
+    The system highlights what changed, for example the income limit, and
+    flags anything unclear.
+
+ 4. REVIEW
+    A reviewer checks the extracted rules and the detected change in the
+    Human Review Queue and approves them.
+
+ 5. RIPPLE (Policy Ripple Engine)
+    The engine follows the rule's links and produces an impact report: which
+    eligibility conditions, procedure steps, required documents and
+    application checks are affected, with proposed updates.
+
+ 6. APPROVE
+    The administrator approves the proposed updates.
+
+ 7. GUIDE (JanSetu)
+    A student asks, in Telugu or English, whether they qualify. The answer
+    uses the updated rule and shows its source.
+
+ 8. CHECK (FormSathi)
+    The student uploads a synthetic sample application. The readiness report
+    uses the updated requirement and lists completed, missing and uncertain
+    items with official references.
+
+ 9. ALERT AND TRACK
+    Affected users get an alert, and deadlines are reviewed.
+
+10. AUDIT
+    The dashboard shows the evidence: which document, which rule, who
+    approved what, and when.
+
+Key message: one connected demonstration, not eight unrelated features.
+
+
+==============================================================================
+16. SECURITY, PRIVACY AND RESPONSIBLE AI RULES
+==============================================================================
+
+NON-NEGOTIABLE RULES
+  1. Every important AI-generated rule or answer keeps its source document
+     and page reference.
+  2. Unverified rules must not silently become active.
+  3. The AI never decides alone that a rule is legally invalid or that one
+     notification overrides another. Unclear cases go to human review.
+  4. If the system has no evidence, it says it does not know.
+  5. Readiness reports never promise acceptance.
+  6. Authenticity checks never claim to prove a document is genuine or fake.
+  7. Newly discovered documents are not authoritative until reviewed.
+  8. Eligibility calculations are done by code, not by the AI model.
+  9. The Policy Ripple Engine is described as a working feature only after it
+     has been implemented and tested.
+ 10. Use synthetic personal documents in the demonstration.
+
+PRIVACY AND SECURITY
+  - Role-based access on every page and API.
+  - Users can view and delete their own uploaded documents.
+  - Collect only the personal details that are needed, and only when the user
+    chooses to provide them.
+  - Encrypt data in transit; use the access controls of the database and
+    storage provider.
+  - Do not store Aadhaar numbers or biometric data.
+  - Keep API keys and secrets in environment variables, never in code.
+  - Where real personal data is ever used, follow India's Digital Personal
+    Data Protection Act (consent, purpose limitation, deletion).
+
+DISCLAIMER SHOWN IN THE PRODUCT
+  "This is guidance based on documents in the system. It is not an official
+  decision or legal advice. Please confirm with the issuing authority."
+
+
+==============================================================================
+17. TECHNICAL CHALLENGES AND SOLUTIONS
+==============================================================================
+
+Outdated notifications treated as current
+   -> versioning with effective dates; only active rules used.
+
+AI hallucination
+   -> answers only from retrieved rules, with citations; "I could not find
+      this" when evidence is missing.
+
+Conflicting instructions
+   -> conflict flags and human review.
+
+Poor PDF or scan quality
+   -> OCR, per-page confidence, manual correction by a reviewer.
+
+Telugu text quality
+   -> test early with real documents; allow manual correction.
+
+Rules hidden in tables
+   -> layout-aware extraction where possible, plus review.
+
+Rule-to-process links being wrong
+   -> links are created and reviewed by a person at first; ripple results
+      always go through approval.
+
+Too much scope for one developer
+   -> strict priorities (section 18); build one connected demo well.
+
+Proving accuracy
+   -> small test set with known correct answers (section 21).
+
+
+==============================================================================
+18. WHAT WE BUILD FIRST (PRIORITY AND SCOPE)
+==============================================================================
+
+The complete vision and the hackathon version are different. Build in this
+order.
+
+MUST BUILD
+  - Shared engine
+  - RuleWeaver
+  - JanSetu AI
+  - FormSathi AI
+  - Source citations, document version comparison, human review
+
+HIGH PRIORITY
+  - Policy Ripple Engine (basic, working version)
+  - Scheme Eligibility Finder
+  - What-If Simulator
+
+IF TIME ALLOWS
+  - Deadline & Compliance Tracker
+  - Audit dashboard
+  - Impact alerts
+
+LATER
+  - Grievance & RTI Assistant
+  - Voice Assistant
+  - Official Source Monitor
+  - Document Authenticity & Source Check
+
+Reasoning: a limited but working Policy Ripple Engine is worth more than
+finishing every supporting module.
+
+
+==============================================================================
+19. DEVELOPMENT ROADMAP (SOLO BUILD)
+==============================================================================
+
+Developer: one person, using Antigravity for AI-assisted development. Usage
+should be conserved by planning first, giving clear single-purpose
+instructions, and reviewing proposed architecture before coding.
+
+STAGE 1 - PROJECT FOUNDATION
+  Set up Antigravity, the GitHub repository, Next.js, Supabase and the
+  environment variables. Establish the project structure.
+
+STAGE 2 - SHARED INTELLIGENCE ENGINE
+  Document upload, text extraction, structured rules, page references and
+  document version storage.
+
+STAGE 3 - RULEWEAVER
+  Rule extraction, old-versus-new comparison, change highlighting and review
+  status.
+
+STAGE 4 - JANSETU AI
+  Question answering using approved rules, simple explanations, English and
+  Telugu responses, and citations.
+
+STAGE 5 - FORMSATHI AI
+  Document checks, missing requirement detection, consistency checks and
+  readiness reports.
+
+STAGE 6 - POLICY RIPPLE ENGINE
+  Connect changes in approved rules to affected eligibility conditions,
+  procedures and application requirements.
+
+STAGE 7 - SUPPORTING FEATURES
+  Eligibility finder, What-If Simulator, deadline tracking and audit
+  dashboard, as time allows.
+
+STAGE 8 - TESTING AND FINAL DEMO
+  Test the full workflow, verify citations, fix errors and prepare the
+  presentation.
+
+NEXT STEP BEFORE CODING
+  Finalise this document as the master scope. Give Antigravity one planning
+  instruction, review its proposed architecture, and only then start
+  building.
+
+DATA TO COLLECT EARLY
+  - Two authentic, publicly available versions of one scholarship
+    notification (an original and an amendment or newer version).
+  - Synthetic sample applications: one correct, and others with planted
+    errors (name mismatch, missing certificate, expired certificate).
+
+
+==============================================================================
+20. DEMO PLAN
+==============================================================================
+
+Use one scholarship scheme and two authentic, publicly available versions of
+its notification.
+
+ 1. Upload the old and new notifications.
+ 2. RuleWeaver extracts their rules.
+ 3. It highlights an important change.
+ 4. The Human Review Queue verifies the proposed change.
+ 5. Policy Ripple shows which eligibility conditions, procedures and
+    documents are affected.
+ 6. JanSetu explains the updated requirement in Telugu or English.
+ 7. FormSathi checks a synthetic sample application against the updated
+    requirements.
+ 8. The dashboard shows the source evidence behind the result.
+
+Optional extra: the What-If Simulator flips an eligibility result live by
+changing the income value.
+
+Preparation: have the demo data ready, test the full flow several times, and
+keep a screen recording as a backup.
+
+
+==============================================================================
+21. TESTING AND EVALUATION
+==============================================================================
+
+  - Rule extraction accuracy against a manually labelled set of rules.
+  - Change detection: did it find every real change between the two
+    versions, and nothing false?
+  - Citation correctness: does each answer point to the right page and
+    clause?
+  - Ripple correctness: were the right linked items found?
+  - Readiness report accuracy on test applications with planted errors.
+  - Eligibility logic unit tests.
+  - Questions with no answer in the system (it must say it does not know).
+  - Telugu question set.
+  - Access tests: a user must not see another user's documents.
+
+
+==============================================================================
+22. RISKS AND MITIGATION
+==============================================================================
+
+Scope too large for one developer
+   -> one scheme, one connected demo, strict priority list.
+
+Wrong or invented AI output
+   -> evidence grounding, human review, visible confidence.
+
+Telugu extraction errors
+   -> test early, manual correction.
+
+Ripple links incomplete or wrong
+   -> reviewer approval of links and impact reports.
+
+Dependence on one AI provider
+   -> keep the AI call in one place so it can be swapped.
+
+Privacy problems
+   -> synthetic demo data, minimal collection, deletion option.
+
+Over-claiming in the presentation
+   -> describe only what has been built and tested; show limits honestly.
+
+Running out of AI-assistant usage
+   -> plan first, small focused instructions, reuse the shared engine.
+
+
+==============================================================================
+23. WHAT WAS REMOVED AND WHY
+==============================================================================
+
+FUNDWATCH (removed completely)
+  It analysed budgets and spending, which is a different kind of problem
+  (numeric data analysis, not rule understanding). It needed different data
+  and carried a risk of accusing without proof. It does not strengthen the
+  rule-to-action story.
+
+EMERGENCY ASSIST (removed completely)
+  It involved sensitive health and biometric data, legal approvals and
+  integrations that cannot be done responsibly in this project, and it has
+  nothing to do with understanding rules.
+
+IMPACT & CHANGE MONITORING AS A SEPARATE MODULE
+  Merged into the Policy Ripple Engine, which does this job in a more
+  powerful and connected way.
+
+Principle behind the cuts
+  Do not add five or six unrelated AI tools. That makes the project look
+  bigger, not more innovative. The strength is in the connection between
+  modules.
+
+
+==============================================================================
+24. FINAL DECISIONS
+==============================================================================
+
+Project identity     : NiyamSetu AI
+Main domain          : Education and scholarships
+Core modules         : RuleWeaver, JanSetu, FormSathi
+New flagship         : Policy Ripple Engine
+Languages            : English and Telugu initially
+Main users           : Students / citizens and administrators
+Medical feature      : Removed
+FundWatch            : Removed
+Architecture         : One shared Rules Intelligence Engine
+Main differentiator  : Traceable rule-to-action impact
+Developer setup      : Solo build with Antigravity
+Stack                : Next.js, Tailwind, Supabase, Gemini API, Vercel
+
+
+==============================================================================
+25. GLOSSARY
+==============================================================================
+
+Notification / circular / order : official document announcing a rule or a
+                                  change.
+Rule                            : one requirement or condition taken from a
+                                  document (for example an income limit).
+Version                         : a rule or document as it stood at a
+                                  particular time.
+Effective date                  : the date from which a rule applies.
+Citation                        : the document, page and clause an answer
+                                  came from.
+Human review                    : a person checks and approves what the AI
+                                  produced.
+Ripple / impact                 : everything that must change because one
+                                  rule changed.
+Readiness report                : a check of an application against the
+                                  verified requirements; not a promise of
+                                  acceptance.
+Synthetic data                  : made-up sample data used instead of real
+                                  personal documents.
+RTI                             : Right to Information application.
+OCR                             : technology that reads text from scanned
+                                  images.
+
+
+==============================================================================
+26. ONE-MINUTE PITCH
+==============================================================================
+
+Every year, students miss scholarships and lose time because official rules
+are long, confusing and constantly changing. Existing tools only summarise a
+document.
+
+NiyamSetu AI is different. It reads the official notification, understands
+the rules, explains them in simple English or Telugu, and checks whether an
+application meets them, always showing the exact source.
+
+And when a rule changes, our Policy Ripple Engine shows what else is
+affected: the eligibility, the steps, the documents and the application
+checks, so that guidance stays correct and people are alerted.
+
+We do not just answer questions about a notification. We track how that
+notification changes the real process.
+
+Understand. Guide. Validate. Connect. Trust.
+
+==============================================================================
+                              END OF DOCUMENT
+==============================================================================

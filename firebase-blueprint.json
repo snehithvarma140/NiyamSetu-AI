@@ -1,0 +1,411 @@
+{
+  "entities": {
+    "UserProfileDoc": {
+      "title": "UserProfileDoc",
+      "description": "Authenticated user private profile and saved eligibility inputs (PII isolated to owner or admin).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID matching document ID.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "languagePreference": {
+          "type": "string",
+          "enum": ["en", "te"]
+        },
+        "role": {
+          "type": "string",
+          "enum": ["STUDENT", "ORGANIZATION", "ADMIN", "PLATFORM_ADMIN", "DEVELOPER"]
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "gender": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "guardianName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "district": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "pincode": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "educationLevel": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "institutionName": {
+          "type": "string",
+          "maxLength": 180
+        },
+        "rollNumber": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "savedIncome": {
+          "type": "number"
+        },
+        "savedMarks": {
+          "type": "number"
+        },
+        "disabilityPercent": {
+          "type": "number"
+        },
+        "bankName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "bankIfsc": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "bankAccountLast4": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "incomeCertNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "casteCertNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "bloodGroup": {
+          "type": "string",
+          "enum": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "UNKNOWN"]
+        },
+        "emergencyAllergies": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "emergencyConditions": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "emergencyMedications": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "emergencyWarnings": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "emergencyContactName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "emergencyContactPhone": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "emergencyContactRelation": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "biometricId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "displayName", "languagePreference", "role", "createdAt", "updatedAt"]
+    },
+    "UserDocumentDoc": {
+      "title": "UserDocumentDoc",
+      "description": "Memorized user-entered or extracted application documents for cross-activity reuse and eligibility verification (strict PII isolation to ownerId).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "docType": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180
+        },
+        "schemeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "docNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "extractedName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "extractedIncome": {
+          "type": "number"
+        },
+        "extractedMarks": {
+          "type": "number"
+        },
+        "extractedAddress": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "sourceActivity": {
+          "type": "string",
+          "enum": ["vault_manual", "vault_upload", "formsathi_extract", "eligibility_sync"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "ownerId", "docType", "title", "schemeId", "sourceActivity", "createdAt", "updatedAt"]
+    },
+    "SavedBookmarkDoc": {
+      "title": "SavedBookmarkDoc",
+      "description": "Citizen-saved scheme checklists, procedure bookmarks, and readiness notes.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "schemeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["saved", "in_progress", "ready"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "ownerId", "schemeId", "title", "status", "createdAt", "updatedAt"]
+    },
+    "SchemeCatalogDoc": {
+      "title": "SchemeCatalogDoc",
+      "description": "Public verified scheme summary metadata synchronized from the Rules Intelligence Store (non-PII).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 64
+        },
+        "code": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 24
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 200
+        },
+        "authority": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 200
+        },
+        "benefitSummary": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 300
+        },
+        "activeRulesCount": {
+          "type": "number"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "code", "name", "authority", "benefitSummary", "activeRulesCount", "active", "createdAt", "updatedAt"]
+    },
+    "ReadinessCheckDoc": {
+      "title": "ReadinessCheckDoc",
+      "description": "Citizen-owned FormSathi readiness check summary synced to Firestore.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "schemeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "applicantLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "completedCount": {
+          "type": "number"
+        },
+        "missingCount": {
+          "type": "number"
+        },
+        "uncertainCount": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ready", "needs_action"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "ownerId", "schemeId", "applicantLabel", "completedCount", "missingCount", "uncertainCount", "status", "createdAt", "updatedAt"]
+    },
+    "AdminRegistryDoc": {
+      "title": "AdminRegistryDoc",
+      "description": "Trusted administrator lookup record.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "grantedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfileDoc" },
+      "description": "Private user profile, address, and eligibility preferences accessible strictly by the account owner or verified admins."
+    },
+    "/user_documents/{docId}": {
+      "schema": { "$ref": "#/entities/UserDocumentDoc" },
+      "description": "Memorized user documents and extracted certificate fields scoped strictly to ownerId."
+    },
+    "/saved_bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/SavedBookmarkDoc" },
+      "description": "Personal citizen scheme bookmarks and readiness notes scoped strictly to ownerId."
+    },
+    "/schemes_catalog/{schemeId}": {
+      "schema": { "$ref": "#/entities/SchemeCatalogDoc" },
+      "description": "Public verified scheme directory synchronized by verified platform administrators."
+    },
+    "/readiness_checks/{checkId}": {
+      "schema": { "$ref": "#/entities/ReadinessCheckDoc" },
+      "description": "Personal FormSathi readiness check summaries scoped strictly to ownerId."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRegistryDoc" },
+      "description": "Verified platform administrator registry."
+    }
+  }
+}
