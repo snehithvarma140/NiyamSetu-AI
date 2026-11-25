@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  APILoadingStatus,
   APIProvider,
   AdvancedMarker,
   InfoWindow,
   Map as GoogleMap,
   Pin,
   useAdvancedMarkerRef,
+  useApiLoadingStatus,
   useMap,
   useMapsLibrary,
 } from '@vis.gl/react-google-maps';
@@ -195,6 +197,9 @@ const CitizenHelpCentersInner: React.FC = () => {
   const { lang, token, user, setMapsQuotaExceeded } = useApp();
   const map = useMap();
   const placesLib = useMapsLibrary('places');
+  const apiStatus = useApiLoadingStatus();
+  const isMapAuthOrLoadError =
+    apiStatus === APILoadingStatus.AUTH_FAILURE || apiStatus === APILoadingStatus.FAILED;
 
   const userAreaDefault = [user?.district, user?.state].filter(Boolean).join(', ') || 'Hyderabad, Telangana';
   const [searchText, setSearchText] = useState('MeeSeva citizen service center');
@@ -328,6 +333,10 @@ const CitizenHelpCentersInner: React.FC = () => {
   }, [placesLib]);
 
   const requestCurrentLocation = () => {
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      setLocationNotice('Current location requires HTTPS. Please choose a preset city or enter your area below.');
+      return;
+    }
     if (!navigator.geolocation) {
       setLocationNotice('Browser geolocation is unavailable.');
       return;
@@ -349,7 +358,19 @@ const CitizenHelpCentersInner: React.FC = () => {
       },
       (geoErr) => {
         setLocating(false);
-        setLocationNotice(geoErr.message || 'Location permission declined.');
+        if (geoErr.code === 1) {
+          setLocationNotice(
+            'Location permission declined. Allow location access in browser settings or select an area manually.'
+          );
+        } else if (geoErr.code === 3) {
+          setLocationNotice(
+            'Location request timed out. Try again or select your city/district manually.'
+          );
+        } else {
+          setLocationNotice(
+            geoErr.message || 'Unable to determine current position. Please select an area manually.'
+          );
+        }
       },
       { enableHighAccuracy: false, timeout: 8000 }
     );
@@ -414,6 +435,17 @@ const CitizenHelpCentersInner: React.FC = () => {
 
       {locationNotice && (
         <div className="text-xs text-slate-600 dark:text-slate-400 font-mono">{locationNotice}</div>
+      )}
+
+      {isMapAuthOrLoadError && (
+        <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-4 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+          <div className="font-bold">Google Maps Failed to Load for This Domain</div>
+          <p>
+            Verify that Maps JavaScript API and Places API (New) are enabled with billing active in
+            Google Cloud Console, and that your API key HTTP referrer restrictions include this
+            website domain. You can still use the AI Location Advisor below for Maps-grounded links.
+          </p>
+        </div>
       )}
 
       {/* Area Selector + Service Search Bar & Presets */}
@@ -715,6 +747,7 @@ export const HelpCentersMapPage: React.FC = () => {
     import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
   );
   const [loadingKey, setLoadingKey] = useState(!import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+  const [mapsConfigError, setMapsConfigError] = useState<string | null>(null);
 
   useEffect(() => {
     if (mapsApiKey) return;
@@ -724,9 +757,14 @@ export const HelpCentersMapPage: React.FC = () => {
         const res = await apiRequest<{ apiKey: string }>('/maps/config');
         if (mounted && res.apiKey) {
           setMapsApiKey(res.apiKey);
+          setMapsConfigError(null);
         }
       } catch (err) {
-        console.warn('Unable to load Google Maps config:', err);
+        if (mounted) {
+          setMapsConfigError(
+            err instanceof Error ? err.message : 'Unable to reach backend /api/maps/config.'
+          );
+        }
       } finally {
         if (mounted) setLoadingKey(false);
       }
@@ -738,13 +776,16 @@ export const HelpCentersMapPage: React.FC = () => {
 
   const fetchMapsConfig = async () => {
     setLoadingKey(true);
+    setMapsConfigError(null);
     try {
       const res = await apiRequest<{ apiKey: string }>('/maps/config');
       if (res.apiKey) {
         setMapsApiKey(res.apiKey);
       }
     } catch (err) {
-      console.warn('Unable to load Google Maps config:', err);
+      setMapsConfigError(
+        err instanceof Error ? err.message : 'Unable to load Google Maps configuration.'
+      );
     } finally {
       setLoadingKey(false);
     }
@@ -765,9 +806,13 @@ export const HelpCentersMapPage: React.FC = () => {
           Google Maps API Key Not Loaded
         </h2>
         <p className="text-sm text-amber-800 dark:text-amber-300">
-          Ensure your Google Maps Platform key is configured in runtime environment variables to
-          render interactive service center maps.
+          Ensure VITE_GOOGLE_MAPS_API_KEY (frontend) or GOOGLE_MAPS_API_KEY (backend) is configured
+          with Maps JavaScript API and Places API (New) enabled to render interactive service center
+          maps.
         </p>
+        {mapsConfigError && (
+          <p className="text-xs font-mono text-amber-900 dark:text-amber-200">{mapsConfigError}</p>
+        )}
         <button
           type="button"
           onClick={() => void fetchMapsConfig()}

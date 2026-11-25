@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useApp, type PageId } from '../../context/AppContext';
 import { tr } from '../../i18n/translations';
+import { isDemoAuthEnabled } from '../../services/api';
 import { AuthModal } from '../ui/AuthModal';
 import { JanSetuDrawer } from '../ui/JanSetuDrawer';
 import { SourceViewerModal } from '../ui/SourceViewerModal';
@@ -115,6 +116,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
 
+  const demoAuthEnabled = isDemoAuthEnabled();
   const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN';
   const isOfficer = user?.role === 'ADMIN' || isPlatformAdmin;
   const isOrg = user?.role === 'ORGANIZATION';
@@ -251,7 +253,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               </>
             )}
           </button>
-          {isOfficer && (
+          {isOfficer && demoAuthEnabled && (
             <button
               type="button"
               disabled={resetting}
@@ -300,7 +302,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{user ? 'Sign Out / Switch Portal' : 'Go to Portal Login'}</span>
               </button>
-              {isOfficer && (
+              {isOfficer && demoAuthEnabled && (
                 <button
                   type="button"
                   disabled={resetting}

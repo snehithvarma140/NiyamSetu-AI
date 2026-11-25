@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Mic, PhoneOff, Send, Sparkles, Volume2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { apiRequest } from '../../services/api';
+import { apiRequest, getWebSocketUrl } from '../../services/api';
 import type { VoiceLanguageCode } from '../../types/niyamsetu';
 import { SpeakButton } from './SpeakButton';
 
@@ -234,6 +234,17 @@ export const LiveVoiceAdvisor: React.FC<LiveVoiceAdvisorProps> = ({
     pendingPromptRef.current = initialTextPrompt || null;
 
     try {
+      if (
+        typeof navigator === 'undefined' ||
+        !navigator.mediaDevices?.getUserMedia ||
+        typeof AudioContext === 'undefined' ||
+        typeof WebSocket === 'undefined'
+      ) {
+        throw new Error(
+          'Live microphone streaming requires an HTTPS browser context with audio support'
+        );
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
@@ -245,10 +256,7 @@ export const LiveVoiceAdvisor: React.FC<LiveVoiceAdvisorProps> = ({
       outputCtxRef.current = outputCtx;
       nextStartTimeRef.current = outputCtx.currentTime;
 
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const ws = new WebSocket(
-        `${protocol}//${window.location.host}/live?lang=${targetLang}&mode=${variant}`
-      );
+      const ws = new WebSocket(getWebSocketUrl(`/live?lang=${targetLang}&mode=${variant}`));
       wsRef.current = ws;
 
       ws.onmessage = (event) => {

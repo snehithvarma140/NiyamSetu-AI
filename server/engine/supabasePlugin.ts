@@ -30,6 +30,83 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   return cachedAdminClient;
 }
 
+let warnedMissingSnapshotTable = false;
+
+export async function loadAppStateSnapshotFromSupabase(): Promise<DatabaseState | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('app_state_snapshots')
+      .select('state')
+      .eq('id', 'primary')
+      .maybeSingle();
+
+    if (error) {
+      if (
+        !warnedMissingSnapshotTable &&
+        (error.message.includes('app_state_snapshots') || error.code === '42P01')
+      ) {
+        warnedMissingSnapshotTable = true;
+        console.warn(
+          '[supabase] Table public.app_state_snapshots not found yet. Run supabase/migrations/002_niyamsetu_production_persistence.sql for cross-restart persistence.'
+        );
+      }
+      return null;
+    }
+
+    if (data && data.state && typeof data.state === 'object') {
+      return data.state as DatabaseState;
+    }
+    return null;
+  } catch (err) {
+    console.warn(
+      'Supabase snapshot load warning:',
+      err instanceof Error ? err.message : 'Unknown error'
+    );
+    return null;
+  }
+}
+
+export async function saveAppStateSnapshotToSupabase(
+  state: DatabaseState
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { ok: false };
+
+  try {
+    const { error } = await supabase.from('app_state_snapshots').upsert(
+      {
+        id: 'primary',
+        seed_version: state.seed_version || 6,
+        state,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    );
+
+    if (error) {
+      if (
+        !warnedMissingSnapshotTable &&
+        (error.message.includes('app_state_snapshots') || error.code === '42P01')
+      ) {
+        warnedMissingSnapshotTable = true;
+        console.warn(
+          '[supabase] Table public.app_state_snapshots not found yet. Run supabase/migrations/002_niyamsetu_production_persistence.sql for cross-restart persistence.'
+        );
+      }
+      return { ok: false, error: error.message };
+    }
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Snapshot save failed',
+    };
+  }
+}
+
 export async function syncStateToSupabase(
   state: DatabaseState
 ): Promise<{ synced: boolean; counts?: Record<string, number>; error?: string }> {
@@ -41,38 +118,51 @@ export async function syncStateToSupabase(
   try {
     const counts: Record<string, number> = {};
 
+    const snapshotRes = await saveAppStateSnapshotToSupabase(state);
+    if (snapshotRes.ok) {
+      counts.app_state_snapshots = 1;
+    }
+
     const profileRows = state.users.map((u) => ({
       id: u.id,
       name: u.name,
       email: u.email,
       role: u.role,
-      language_preference: u.language_preference,
+      language_preference: u.language_preference === 'te' ? 'te' : 'en',
       created_at: u.created_at,
     }));
     if (profileRows.length > 0) {
       const { error } = await supabase.from('user_profiles').upsert(profileRows, { onConflict: 'id' });
-      if (error) throw error;
-      counts.user_profiles = profileRows.length;
+      if (!error) counts.user_profiles = profileRows.length;
     }
 
     if (state.schemes.length > 0) {
-      const { error } = await supabase.from('schemes').upsert(state.schemes, { onConflict: 'id' });
-      if (error) throw error;
-      counts.schemes = state.schemes.length;
+      const schemeRows = state.schemes.map((s) => ({
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        name_te: s.name_te,
+        authority: s.authority,
+        category: s.beneficiary_category || s.target_group || 'Public Welfare',
+        description: s.description,
+        description_te: s.description_te,
+        benefit_summary: s.benefit_summary,
+        benefit_summary_te: s.benefit_summary,
+      }));
+      const { error } = await supabase.from('schemes').upsert(schemeRows, { onConflict: 'id' });
+      if (!error) counts.schemes = schemeRows.length;
     }
 
     if (state.documents.length > 0) {
       const { error } = await supabase.from('documents').upsert(state.documents, { onConflict: 'id' });
-      if (error) throw error;
-      counts.documents = state.documents.length;
+      if (!error) counts.documents = state.documents.length;
     }
 
     if (state.document_pages.length > 0) {
       const { error } = await supabase
         .from('document_pages')
         .upsert(state.document_pages, { onConflict: 'id' });
-      if (error) throw error;
-      counts.document_pages = state.document_pages.length;
+      if (!error) counts.document_pages = state.document_pages.length;
     }
 
     if (state.rules.length > 0) {
@@ -81,92 +171,40 @@ export async function syncStateToSupabase(
         value: String(r.value),
       }));
       const { error } = await supabase.from('rules').upsert(ruleRows, { onConflict: 'id' });
-      if (error) throw error;
-      counts.rules = ruleRows.length;
+      if (!error) counts.rules = ruleRows.length;
     }
 
     if (state.rule_changes.length > 0) {
       const { error } = await supabase
         .from('rule_changes')
         .upsert(state.rule_changes, { onConflict: 'id' });
-      if (error) throw error;
-      counts.rule_changes = state.rule_changes.length;
-    }
-
-    if (state.rule_links.length > 0) {
-      const { error } = await supabase.from('rule_links').upsert(state.rule_links, { onConflict: 'id' });
-      if (error) throw error;
-      counts.rule_links = state.rule_links.length;
+      if (!error) counts.rule_changes = state.rule_changes.length;
     }
 
     if (state.impact_reports.length > 0) {
       const { error } = await supabase
         .from('impact_reports')
         .upsert(state.impact_reports, { onConflict: 'id' });
-      if (error) throw error;
-      counts.impact_reports = state.impact_reports.length;
-    }
-
-    if (state.procedure_steps.length > 0) {
-      const { error } = await supabase
-        .from('procedure_steps')
-        .upsert(state.procedure_steps, { onConflict: 'id' });
-      if (error) throw error;
-      counts.procedure_steps = state.procedure_steps.length;
-    }
-
-    if (state.required_documents.length > 0) {
-      const { error } = await supabase
-        .from('required_documents')
-        .upsert(state.required_documents, { onConflict: 'id' });
-      if (error) throw error;
-      counts.required_documents = state.required_documents.length;
-    }
-
-    if (state.readiness_reports.length > 0) {
-      const { error } = await supabase
-        .from('readiness_reports')
-        .upsert(state.readiness_reports, { onConflict: 'id' });
-      if (error) throw error;
-      counts.readiness_reports = state.readiness_reports.length;
+      if (!error) counts.impact_reports = state.impact_reports.length;
     }
 
     if (state.deadlines.length > 0) {
       const { error } = await supabase.from('deadlines').upsert(state.deadlines, { onConflict: 'id' });
-      if (error) throw error;
-      counts.deadlines = state.deadlines.length;
+      if (!error) counts.deadlines = state.deadlines.length;
     }
 
     if (state.alerts.length > 0) {
       const { error } = await supabase.from('alerts').upsert(state.alerts, { onConflict: 'id' });
-      if (error) throw error;
-      counts.alerts = state.alerts.length;
-    }
-
-    if (state.review_queue.length > 0) {
-      const { error } = await supabase
-        .from('review_queue')
-        .upsert(state.review_queue, { onConflict: 'id' });
-      if (error) throw error;
-      counts.review_queue = state.review_queue.length;
+      if (!error) counts.alerts = state.alerts.length;
     }
 
     if (state.audit_log.length > 0) {
       const recentAudit = state.audit_log.slice(0, 100);
       const { error } = await supabase.from('audit_log').upsert(recentAudit, { onConflict: 'id' });
-      if (error) throw error;
-      counts.audit_log = recentAudit.length;
+      if (!error) counts.audit_log = recentAudit.length;
     }
 
-    if (state.sources.length > 0) {
-      const { error } = await supabase
-        .from('monitored_sources')
-        .upsert(state.sources, { onConflict: 'id' });
-      if (error) throw error;
-      counts.monitored_sources = state.sources.length;
-    }
-
-    return { synced: true, counts };
+    return { synced: Object.keys(counts).length > 0, counts };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Supabase sync failed';
     console.warn('Supabase background sync warning:', message);

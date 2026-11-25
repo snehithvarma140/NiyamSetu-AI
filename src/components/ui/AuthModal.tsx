@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Building2, ShieldCheck, User, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { isDemoAuthEnabled } from '../../services/api';
 import type { OrganizationType, UserRole } from '../../types/niyamsetu';
 
 export const AuthModal: React.FC = () => {
@@ -17,7 +18,10 @@ export const AuthModal: React.FC = () => {
     setPage,
   } = useApp();
 
-  const [tab, setTab] = useState<'roles' | 'login' | 'register'>('roles');
+  const demoAuthEnabled = isDemoAuthEnabled();
+  const [tab, setTab] = useState<'roles' | 'login' | 'register'>(() =>
+    demoAuthEnabled ? 'roles' : 'login'
+  );
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -203,7 +207,9 @@ export const AuthModal: React.FC = () => {
 
               <div className="flex gap-1 p-1 rounded-md bg-slate-100 dark:bg-slate-800">
                 {[
-                  ['roles', 'Portal Workspaces'],
+                  ...(demoAuthEnabled
+                    ? ([['roles', 'Portal Workspaces']] as Array<[string, string]>)
+                    : []),
                   ['login', 'Email Sign In'],
                   ['register', 'New Citizen'],
                 ].map(([id, label]) => (
@@ -231,7 +237,7 @@ export const AuthModal: React.FC = () => {
             </div>
           )}
 
-          {tab === 'roles' && (
+          {demoAuthEnabled && tab === 'roles' && (
             <div className="space-y-2.5">
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Select a portal to access server-enforced Citizen Services or Government
@@ -305,7 +311,7 @@ export const AuthModal: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@niyamsetu.demo"
+                  placeholder={demoAuthEnabled ? 'student@niyamsetu.demo' : 'citizen@example.com'}
                   className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
                 />
               </div>

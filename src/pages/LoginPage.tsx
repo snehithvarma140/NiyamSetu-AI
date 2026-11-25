@@ -11,7 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import { useApp, type PageId } from '../context/AppContext';
-import { apiRequest } from '../services/api';
+import { apiRequest, isDemoAuthEnabled } from '../services/api';
 import { AuthHero3DScene } from '../components/three/AuthHero3DScene';
 import { LoginVoiceAndNewsDesk } from '../components/landing/LoginVoiceAndNewsDesk';
 import { LatestUpdatesShowcase } from '../components/landing/LatestUpdatesShowcase';
@@ -88,9 +88,12 @@ export const LoginPage: React.FC = () => {
     setPage,
   } = useApp();
 
+  const demoAuthEnabled = isDemoAuthEnabled();
   const [hoveredRole, setHoveredRole] = useState<'STUDENT' | 'ORGANIZATION' | 'ADMIN'>('STUDENT');
   const [selectedOrgType, setSelectedOrgType] = useState<OrganizationType>('hospital');
-  const [authTab, setAuthTab] = useState<'roles' | 'login' | 'register'>('roles');
+  const [authTab, setAuthTab] = useState<'roles' | 'login' | 'register'>(() =>
+    demoAuthEnabled ? 'roles' : 'login'
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -165,6 +168,16 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleQuickAccess = async (targetPage: PageId) => {
+    if (!demoAuthEnabled) {
+      setAuthTab('login');
+      setError(
+        lang === 'te'
+          ? 'పౌర పోర్టల్ తెరవడానికి Google లేదా ఇమెయిల్‌తో సైన్ ఇన్ చేయండి.'
+          : 'Please sign in with Google or your email account to open the Citizen Portal.'
+      );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -381,7 +394,7 @@ export const LoginPage: React.FC = () => {
 
           <div className="flex gap-1 p-1 rounded-md bg-slate-200/70 dark:bg-slate-800">
             {[
-              ['roles', 'Role Access'],
+              ...(demoAuthEnabled ? ([['roles', 'Role Access']] as Array<[string, string]>) : []),
               ['login', 'Email Sign In'],
               ['register', 'New Citizen'],
             ].map(([id, label]) => (
@@ -409,7 +422,7 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {authTab === 'roles' && (
+          {demoAuthEnabled && authTab === 'roles' && (
             <div className="space-y-3">
               {roleCards.map((card) => {
                 const Icon = card.icon;
@@ -500,7 +513,7 @@ export const LoginPage: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@niyamsetu.demo"
+                  placeholder={demoAuthEnabled ? 'student@niyamsetu.demo' : 'citizen@example.com'}
                   className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
                 />
               </div>
@@ -513,7 +526,7 @@ export const LoginPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password (demo: NiyamDemo2026!)"
+                  placeholder={demoAuthEnabled ? 'Enter password (demo: NiyamDemo2026!)' : 'Enter your password'}
                   className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
                 />
               </div>

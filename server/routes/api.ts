@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import {
   hashPassword,
+  isSessionSecretConfigured,
   optionalAuth,
   requireAuth,
   requireRole,
@@ -121,19 +122,108 @@ function sanitizeFormFields(raw: unknown): Record<string, string> {
   return result;
 }
 
+function isDemoAuthEnabled(): boolean {
+  if (process.env.ENABLE_DEMO_AUTH === 'true') return true;
+  if (process.env.ENABLE_DEMO_AUTH === 'false') return false;
+  return process.env.NODE_ENV !== 'production';
+}
+
+function getResolvedMapsApiKey(): string {
+  let apiKey =
+    process.env.VITE_GOOGLE_MAPS_API_KEY ||
+    process.env.GOOGLE_MAPS_API_KEY ||
+    process.env.GOOGLE_MAPS_PLATFORM_API_KEY ||
+    process.env.MAPS_API_KEY ||
+    '';
+  if (!apiKey) {
+    try {
+      const envPath = path.resolve(process.cwd(), '.env');
+      if (fs.existsSync(envPath)) {
+        const parsed = dotenv.parse(fs.readFileSync(envPath, 'utf-8'));
+        apiKey =
+          parsed.VITE_GOOGLE_MAPS_API_KEY ||
+          parsed.GOOGLE_MAPS_API_KEY ||
+          parsed.GOOGLE_MAPS_PLATFORM_API_KEY ||
+          parsed.MAPS_API_KEY ||
+          '';
+      }
+    } catch {
+      // ignore fallback read errors
+    }
+  }
+  return apiKey.trim();
+}
+
+function createRateLimiter(options: { windowMs: number; max: number; keyPrefix: string }) {
+  const hits = new Map<string, { count: number; resetAt: number }>();
+  return (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+    const now = Date.now();
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const bucketKey = `${options.keyPrefix}:${ip}`;
+    const existing = hits.get(bucketKey);
+
+    if (!existing || existing.resetAt <= now) {
+      if (hits.size > 2000) {
+        for (const [k, v] of hits.entries()) {
+          if (v.resetAt <= now) hits.delete(k);
+        }
+      }
+      hits.set(bucketKey, { count: 1, resetAt: now + options.windowMs });
+      next();
+      return;
+    }
+
+    existing.count += 1;
+    if (existing.count > options.max) {
+      const retryAfterSec = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfterSec));
+      res.status(429).json({
+        error: `Too many requests. Please wait ${retryAfterSec}s before trying again.`,
+      });
+      return;
+    }
+    next();
+  };
+}
+
+const authRateLimit = createRateLimiter({ windowMs: 60_000, max: 25, keyPrefix: 'auth' });
+const publicAiRateLimit = createRateLimiter({ windowMs: 60_000, max: 35, keyPrefix: 'ai' });
+
 export const apiRouter = express.Router();
 
 apiRouter.use(optionalAuth);
 
-// Health check
+// Health check (safe readiness flags only — never exposes secret values)
 apiRouter.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'NiyamSetu AI Unified Engine' });
+  const persistence = db.getPersistenceSummary();
+  const geminiConfigured = Boolean(process.env.GEMINI_API_KEY?.trim());
+  const mapsConfigured = Boolean(getResolvedMapsApiKey());
+
+  res.json({
+    status: 'ok',
+    service: 'NiyamSetu AI Unified Engine',
+    environment: process.env.NODE_ENV || 'development',
+    uptime_seconds: Math.round(process.uptime()),
+    persistence_mode: persistence.mode,
+    supabase_configured: persistence.supabase_configured,
+    custom_data_dir: persistence.custom_data_dir,
+    gemini_configured: geminiConfigured,
+    maps_configured: mapsConfigured,
+    demo_auth_enabled: isDemoAuthEnabled(),
+    session_secret_configured: isSessionSecretConfigured(),
+  });
 });
 
 // ---------------------------------------------------------------------------
 // 1. AUTHENTICATION & ROLES
 // ---------------------------------------------------------------------------
-apiRouter.post('/auth/demo-signin', (req, res) => {
+apiRouter.post('/auth/demo-signin', authRateLimit, (req, res) => {
+  if (!isDemoAuthEnabled()) {
+    res.status(403).json({
+      error: 'One-click demo sign-in is disabled in production. Use Email Sign In or Google Sign-In.',
+    });
+    return;
+  }
   const role = String(req.body?.role || 'STUDENT') as UserRole;
   const orgTypeRaw = String(req.body?.organization_type || 'hospital') as OrganizationType;
   const state = db.getState();
@@ -151,7 +241,7 @@ apiRouter.post('/auth/demo-signin', (req, res) => {
   res.json({ token, user: profile });
 });
 
-apiRouter.post('/auth/login', (req, res) => {
+apiRouter.post('/auth/login', authRateLimit, (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
   if (!email || !password) {
@@ -169,7 +259,7 @@ apiRouter.post('/auth/login', (req, res) => {
   res.json({ token, user: profile });
 });
 
-apiRouter.post('/auth/register', (req, res) => {
+apiRouter.post('/auth/register', authRateLimit, (req, res) => {
   const name = String(req.body?.name || '').trim();
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
@@ -1149,7 +1239,7 @@ apiRouter.post(
 // ---------------------------------------------------------------------------
 // 6. JANSETU AI — GROUNDED BILINGUAL GUIDANCE & PROCEDURES
 // ---------------------------------------------------------------------------
-apiRouter.post('/jansetu/ask', async (req: AuthenticatedRequest, res) => {
+apiRouter.post('/jansetu/ask', publicAiRateLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const question = String(req.body?.question || '').trim();
     const lang = normalizeVoiceLang(req.body?.lang);
@@ -2862,6 +2952,16 @@ apiRouter.post(
       res.status(404).json({ error: 'Organization verification task not found.' });
       return;
     }
+    if (
+      req.user!.role === 'ORGANIZATION' &&
+      req.user!.organization_type &&
+      task.org_type !== req.user!.organization_type
+    ) {
+      res.status(403).json({
+        error: `Sector isolation enforced: ${req.user!.organization_type} accounts cannot modify ${task.org_type} tasks.`,
+      });
+      return;
+    }
     const status = req.body?.status === 'flagged' ? 'flagged' : 'verified';
     const notes = String(req.body?.notes || '').trim().slice(0, 400);
     task.status = status;
@@ -3024,52 +3124,41 @@ apiRouter.post('/authenticity/check', (req, res) => {
   });
 });
 
-apiRouter.post('/demo/reset', (req: AuthenticatedRequest, res) => {
-  const newState = db.resetToDemoSeed();
-  appendAuditLog({
-    actorId: req.user?.id || 'demo-operator',
-    actorName: req.user?.name || 'Demo Operator',
-    actorRole: req.user?.role || 'ADMIN',
-    action: 'Demo dataset reset to initial state',
-    objectType: 'system',
-    objectId: 'seed-v1',
-    sourceReference: 'Sample Notifications SN-2025/01 & SN-2026/07',
-    details: 'Restored sample notifications, 3 draft changes, and clean audit trail.',
-  });
-  db.save();
-  res.json({ reset: true, rules_count: newState.rules.length });
-});
+apiRouter.post(
+  '/demo/reset',
+  requireAuth,
+  requireRole(['ADMIN', 'PLATFORM_ADMIN']),
+  (req: AuthenticatedRequest, res) => {
+    if (!isDemoAuthEnabled()) {
+      res.status(403).json({
+        error: 'Demo dataset reset is disabled in production.',
+      });
+      return;
+    }
+    const newState = db.resetToDemoSeed();
+    appendAuditLog({
+      actorId: req.user!.id,
+      actorName: req.user!.name,
+      actorRole: req.user!.role,
+      action: 'Demo dataset reset to initial state',
+      objectType: 'system',
+      objectId: 'seed-v1',
+      sourceReference: 'Sample Notifications SN-2025/01 & SN-2026/07',
+      details: 'Restored sample notifications, 3 draft changes, and clean audit trail.',
+    });
+    db.save();
+    res.json({ reset: true, rules_count: newState.rules.length });
+  }
+);
 
 // ---------------------------------------------------------------------------
 // 11. MAPS CONFIG, GOOGLE AUTH SYNC, MULTI-TURN CHAT, GROUNDING & TRANSCRIBE
 // ---------------------------------------------------------------------------
 apiRouter.get('/maps/config', (_req, res) => {
-  let apiKey =
-    process.env.VITE_GOOGLE_MAPS_API_KEY ||
-    process.env.GOOGLE_MAPS_API_KEY ||
-    process.env.GOOGLE_MAPS_PLATFORM_API_KEY ||
-    process.env.MAPS_API_KEY ||
-    '';
-  if (!apiKey) {
-    try {
-      const envPath = path.resolve(process.cwd(), '.env');
-      if (fs.existsSync(envPath)) {
-        const parsed = dotenv.parse(fs.readFileSync(envPath, 'utf-8'));
-        apiKey =
-          parsed.VITE_GOOGLE_MAPS_API_KEY ||
-          parsed.GOOGLE_MAPS_API_KEY ||
-          parsed.GOOGLE_MAPS_PLATFORM_API_KEY ||
-          parsed.MAPS_API_KEY ||
-          '';
-      }
-    } catch {
-      // ignore fallback read errors
-    }
-  }
-  res.json({ apiKey });
+  res.json({ apiKey: getResolvedMapsApiKey() });
 });
 
-apiRouter.post('/auth/google-sync', async (req, res) => {
+apiRouter.post('/auth/google-sync', authRateLimit, async (req, res) => {
   try {
     const idToken = String(req.body?.idToken || '').trim();
     if (!idToken) {
@@ -3077,21 +3166,23 @@ apiRouter.post('/auth/google-sync', async (req, res) => {
       return;
     }
 
-    const fbConfigPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
-    if (!fs.existsSync(fbConfigPath)) {
-      res.status(503).json({ error: 'Firebase configuration is unavailable on the server.' });
-      return;
+    let firebaseApiKey = (process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_API_KEY || '').trim();
+    if (!firebaseApiKey) {
+      const fbConfigPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+      if (fs.existsSync(fbConfigPath)) {
+        const fbConfig = JSON.parse(fs.readFileSync(fbConfigPath, 'utf-8')) as { apiKey?: string };
+        firebaseApiKey = (fbConfig.apiKey || '').trim();
+      }
     }
 
-    const fbConfig = JSON.parse(fs.readFileSync(fbConfigPath, 'utf-8')) as { apiKey?: string };
-    if (!fbConfig.apiKey) {
-      res.status(503).json({ error: 'Firebase API key missing.' });
+    if (!firebaseApiKey) {
+      res.status(503).json({ error: 'Firebase configuration is unavailable on the server.' });
       return;
     }
 
     const lookupRes = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(
-        fbConfig.apiKey
+        firebaseApiKey
       )}`,
       {
         method: 'POST',
@@ -3122,10 +3213,13 @@ apiRouter.post('/auth/google-sync', async (req, res) => {
 
     const email = fbUser.email.toLowerCase();
     const displayName = fbUser.displayName || email.split('@')[0];
-    const resolvedRole: UserRole =
-      email === 'snehithvarma140@gmail.com' || email === 'snehithvarma1940@gmail.com'
-        ? 'PLATFORM_ADMIN'
-        : 'STUDENT';
+    const configuredAdmins = new Set(
+      (process.env.PLATFORM_ADMIN_EMAILS || 'snehithvarma140@gmail.com,snehithvarma1940@gmail.com')
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+    );
+    const resolvedRole: UserRole = configuredAdmins.has(email) ? 'PLATFORM_ADMIN' : 'STUDENT';
 
     const state = db.getState();
     let appUser = state.users.find((u) => u.email.toLowerCase() === email);
@@ -3152,7 +3246,7 @@ apiRouter.post('/auth/google-sync', async (req, res) => {
   }
 });
 
-apiRouter.post('/jansetu/chat', async (req: AuthenticatedRequest, res) => {
+apiRouter.post('/jansetu/chat', publicAiRateLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const message = String(req.body?.message || '').trim();
     const lang = normalizeVoiceLang(req.body?.lang);
@@ -3232,7 +3326,7 @@ apiRouter.post('/jansetu/chat', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-apiRouter.post('/jansetu/search-grounded', async (req: AuthenticatedRequest, res) => {
+apiRouter.post('/jansetu/search-grounded', publicAiRateLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const query = String(req.body?.query || '').trim();
     const lang = normalizeVoiceLang(req.body?.lang);
@@ -3261,7 +3355,7 @@ apiRouter.post('/jansetu/search-grounded', async (req: AuthenticatedRequest, res
   }
 });
 
-apiRouter.post('/jansetu/maps-grounded', async (req: AuthenticatedRequest, res) => {
+apiRouter.post('/jansetu/maps-grounded', publicAiRateLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const query = String(req.body?.query || '').trim();
     const lang = (req.body?.lang === 'te' ? 'te' : 'en') as LanguageCode;
@@ -3297,7 +3391,7 @@ apiRouter.post('/jansetu/maps-grounded', async (req: AuthenticatedRequest, res) 
   }
 });
 
-apiRouter.post('/audio/transcribe', async (req, res) => {
+apiRouter.post('/audio/transcribe', publicAiRateLimit, async (req, res) => {
   try {
     const base64Audio = String(req.body?.base64Audio || '').trim();
     const mimeType = String(req.body?.mimeType || 'audio/webm').trim();
@@ -3552,7 +3646,7 @@ apiRouter.get('/news-feed', requireAuth, async (req: AuthenticatedRequest, res) 
   }
 });
 
-apiRouter.get('/public/news-feed', async (req, res) => {
+apiRouter.get('/public/news-feed', publicAiRateLimit, async (req, res) => {
   try {
     const lang = (req.query.lang === 'te' ? 'te' : 'en') as LanguageCode;
     const rawInterests = String(req.query.interests || '').trim();
@@ -3633,7 +3727,7 @@ apiRouter.get('/citizen/change-alerts', requireAuth, (req: AuthenticatedRequest,
   res.json({ change_alerts: changeAlerts.slice(0, 6) });
 });
 
-apiRouter.post('/navigator/resolve', async (req: AuthenticatedRequest, res) => {
+apiRouter.post('/navigator/resolve', publicAiRateLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const problem = String(req.body?.problem || '').trim().slice(0, 600);
     const lang = (req.body?.lang === 'te' ? 'te' : 'en') as LanguageCode;
@@ -3909,7 +4003,7 @@ apiRouter.post('/faqs/unanswered', (req: AuthenticatedRequest, res) => {
   res.status(201).json({ report });
 });
 
-apiRouter.post('/audio/tts', async (req: AuthenticatedRequest, res) => {
+apiRouter.post('/audio/tts', publicAiRateLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const text = String(req.body?.text || '').trim();
     const lang = normalizeVoiceLang(req.body?.lang);
@@ -3926,7 +4020,7 @@ apiRouter.post('/audio/tts', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-apiRouter.post('/public/news-speak', async (req, res) => {
+apiRouter.post('/public/news-speak', publicAiRateLimit, async (req, res) => {
   try {
     const lang = normalizeVoiceLang(req.body?.lang);
     const categoryLabel = String(req.body?.categoryLabel || 'All Updates').trim();

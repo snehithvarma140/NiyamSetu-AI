@@ -1,20 +1,92 @@
+import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import dotenv from 'dotenv';
-import express from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import { Modality, type LiveServerMessage } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import { WebSocketServer } from 'ws';
 import { getAiClient } from './server/engine/aiService.ts';
+import { db } from './server/engine/store.ts';
 import { apiRouter } from './server/routes/api.ts';
 
 dotenv.config();
 
 const PORT = Number(process.env.PORT || 3000);
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+function buildAllowedOrigins(): string[] {
+  const candidates = [
+    process.env.CORS_ALLOWED_ORIGINS,
+    process.env.FRONTEND_URL,
+    process.env.APP_URL,
+  ]
+    .filter(Boolean)
+    .flatMap((v) => String(v).split(','))
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  return Array.from(new Set(candidates));
+}
+
+function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): boolean {
+  if (!origin) return true; // non-browser tools / curl / server-to-server / healthchecks
+  const normalized = origin.trim().replace(/\/+$/, '');
+
+  // Always allow localhost / 127.0.0.1 in non-production, or explicit allowlist match
+  if (!IS_PRODUCTION && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized)) {
+    return true;
+  }
+
+  if (allowedOrigins.includes('*') || allowedOrigins.includes(normalized)) {
+    return true;
+  }
+
+  // Optional wildcard Vercel preview domains when explicitly enabled
+  if (
+    process.env.CORS_ALLOW_VERCEL_PREVIEWS === 'true' &&
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalized)
+  ) {
+    return true;
+  }
+
+  // In single-origin AI Studio or unconfigured dev mode, allow same-host origins when no explicit restriction is set
+  if (allowedOrigins.length === 0 && !IS_PRODUCTION) {
+    return true;
+  }
+
+  return false;
+}
 
 async function startServer(): Promise<void> {
+  await db.hydrateFromRemote();
+
   const app = express();
+  app.set('trust proxy', 1);
+
   const server = http.createServer(app);
+  const allowedOrigins = buildAllowedOrigins();
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin;
+    res.setHeader('Vary', 'Origin');
+
+    if (origin && isOriginAllowed(origin, allowedOrigins)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Max-Age', '86400');
+    } else if (origin && req.method === 'OPTIONS') {
+      res.status(403).json({ error: 'Origin not permitted by CORS policy.' });
+      return;
+    }
+
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
 
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
@@ -22,8 +94,23 @@ async function startServer(): Promise<void> {
   // Mount NiyamSetu AI unified backend routes
   app.use('/api', apiRouter);
 
+  app.use('/api/*', (_req: Request, res: Response) => {
+    res.status(404).json({ error: 'API endpoint not found.' });
+  });
+
   // Real-Time Live Voice WebSocket Bridge (`gemini-3.8-live`)
-  const wss = new WebSocketServer({ server, path: '/live' });
+  const wss = new WebSocketServer({
+    server,
+    path: '/live',
+    verifyClient: (info, done) => {
+      const origin = info.origin || info.req.headers.origin;
+      if (isOriginAllowed(origin, allowedOrigins)) {
+        done(true);
+      } else {
+        done(false, 403, 'Origin not allowed');
+      }
+    },
+  });
 
   wss.on('connection', async (clientWs, req) => {
     let closed = false;
@@ -155,12 +242,25 @@ async function startServer(): Promise<void> {
     });
   });
 
-  if (process.env.NODE_ENV === 'production') {
+  if (IS_PRODUCTION) {
     const distPath = path.resolve(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    const distIndex = path.join(distPath, 'index.html');
+    if (fs.existsSync(distIndex)) {
+      app.use(express.static(distPath));
+      app.get('*', (_req, res) => {
+        res.sendFile(distIndex);
+      });
+    } else {
+      // Independent backend-only hosting (e.g., Render API + Vercel frontend)
+      app.get('/', (_req, res) => {
+        res.json({
+          status: 'ok',
+          service: 'NiyamSetu AI API',
+          health: '/api/health',
+          websocket: '/live',
+        });
+      });
+    }
   } else {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -169,8 +269,23 @@ async function startServer(): Promise<void> {
     app.use(vite.middlewares);
   }
 
+  // Global production-safe JSON error handler
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const message =
+      err instanceof Error && !IS_PRODUCTION
+        ? err.message
+        : 'An unexpected server error occurred.';
+    console.error('[express] Unhandled error:', err instanceof Error ? err.message : err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: message });
+    }
+  });
+
+  const persistence = db.getPersistenceSummary();
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`NiyamSetu AI server listening on http://localhost:${PORT}`);
+    console.log(
+      `NiyamSetu AI server listening on http://localhost:${PORT} (env=${process.env.NODE_ENV || 'development'}, persistence=${persistence.mode}, corsOrigins=${allowedOrigins.length})`
+    );
   });
 }
 

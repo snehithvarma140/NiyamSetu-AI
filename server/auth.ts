@@ -2,11 +2,23 @@ import crypto from 'crypto';
 import type { Request, Response, NextFunction } from 'express';
 import type { OrganizationType, UserProfile, UserRole } from '../src/types/niyamsetu.ts';
 
+const RAW_SESSION_SECRET = process.env.SESSION_SECRET?.trim() || '';
+const HAS_PERSISTENT_SESSION_SECRET = RAW_SESSION_SECRET.length >= 16;
+
+if (process.env.NODE_ENV === 'production' && !HAS_PERSISTENT_SESSION_SECRET) {
+  console.warn(
+    '[security] SESSION_SECRET is unset or shorter than 16 characters; using ephemeral per-process signing key (sessions will reset across restarts).'
+  );
+}
+
 // Session secret read from process.env with a secure random per-process fallback
-const SESSION_SECRET =
-  process.env.SESSION_SECRET && process.env.SESSION_SECRET.length >= 16
-    ? process.env.SESSION_SECRET
-    : crypto.randomBytes(32).toString('hex');
+const SESSION_SECRET = HAS_PERSISTENT_SESSION_SECRET
+  ? RAW_SESSION_SECRET
+  : crypto.randomBytes(32).toString('hex');
+
+export function isSessionSecretConfigured(): boolean {
+  return HAS_PERSISTENT_SESSION_SECRET;
+}
 
 export interface AuthenticatedRequest extends Request {
   user?: {

@@ -31,9 +31,25 @@ import type {
   UserRole,
 } from '../types/niyamsetu';
 
-export const firebaseApp = initializeApp(firebaseConfig);
+const resolvedFirebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || '',
+  messagingSenderId:
+    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || '',
+  firestoreDatabaseId:
+    import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || '(default)',
+};
+
+export const isFirebaseConfigured = Boolean(
+  resolvedFirebaseConfig.apiKey && resolvedFirebaseConfig.projectId
+);
+
+export const firebaseApp = initializeApp(resolvedFirebaseConfig);
 export const auth = getAuth(firebaseApp);
-export const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(firebaseApp, resolvedFirebaseConfig.firestoreDatabaseId);
 
 export enum OperationType {
   CREATE = 'create',
@@ -133,6 +149,12 @@ export async function signInWithGooglePopup(lang: LanguageCode): Promise<{
   firebaseUser: FirebaseUser;
   idToken: string;
 } | null> {
+  if (!isFirebaseConfigured) {
+    throw new Error(
+      'Firebase Authentication is not configured for this environment. Please use Email Sign In.'
+    );
+  }
+
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
 
@@ -162,7 +184,7 @@ export async function signInWithGooglePopup(lang: LanguageCode): Promise<{
     }
     if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
       throw new Error(
-        'Google Sign-In popup is restricted on this preview domain. Please use Email Sign In or Role Access.'
+        'Google Sign-In is not authorized for this domain yet. Add this domain to Firebase Console -> Authentication -> Settings -> Authorized domains, or use Email Sign In.'
       );
     }
     if (code === 'auth/network-request-failed') {

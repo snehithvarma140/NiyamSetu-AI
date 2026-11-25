@@ -29,7 +29,12 @@ import type {
 } from '../../src/types/niyamsetu.ts';
 import { hashPassword } from '../auth.ts';
 import { getExtraSeedBundle } from './extraSeedData.ts';
-import { isSupabaseConfigured, syncStateToSupabase } from './supabasePlugin.ts';
+import {
+  isSupabaseConfigured,
+  loadAppStateSnapshotFromSupabase,
+  saveAppStateSnapshotToSupabase,
+  syncStateToSupabase,
+} from './supabasePlugin.ts';
 
 export interface StoredUser extends UserProfile {
   password_hash: string;
@@ -597,7 +602,15 @@ function createSeedFaqs(): FaqItem[] {
 }
 
 const CURRENT_SEED_VERSION = 6;
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const CONFIGURED_DATA_DIR = (
+  process.env.NIYAMSETU_DATA_DIR ||
+  process.env.DATA_DIR ||
+  process.env.RENDER_DISK_PATH ||
+  ''
+).trim();
+const DATA_DIR = CONFIGURED_DATA_DIR
+  ? path.resolve(CONFIGURED_DATA_DIR)
+  : path.resolve(process.cwd(), 'data');
 const STATE_FILE = path.join(DATA_DIR, 'niyamsetu-state.json');
 
 function makePortraitSvgDataUri(initials: string, bgHex: string, accentHex: string): string {
@@ -3747,9 +3760,59 @@ function createInitialState(): DatabaseState {
 
 class DataStore {
   private state: DatabaseState;
+  private hydratedFromSupabase = false;
 
   constructor() {
     this.state = this.load();
+  }
+
+  private normalizeLoadedState(parsed: DatabaseState | null | undefined): DatabaseState | null {
+    if (
+      parsed &&
+      parsed.seed_version === CURRENT_SEED_VERSION &&
+      Array.isArray(parsed.schemes) &&
+      parsed.schemes.length >= 16 &&
+      Array.isArray(parsed.rules) &&
+      Array.isArray(parsed.users) &&
+      Array.isArray(parsed.user_documents)
+    ) {
+      if (!Array.isArray(parsed.applications)) {
+        parsed.applications = [];
+      }
+      if (!Array.isArray(parsed.organization_tasks)) {
+        parsed.organization_tasks = [];
+      }
+      if (!Array.isArray(parsed.appointments) || parsed.appointments.length === 0) {
+        parsed.appointments = createSeedAppointments();
+      }
+      if (!Array.isArray(parsed.complaints) || parsed.complaints.length === 0) {
+        parsed.complaints = createSeedComplaints();
+      }
+      if (!Array.isArray(parsed.faqs) || parsed.faqs.length === 0) {
+        parsed.faqs = createSeedFaqs();
+      }
+      if (!Array.isArray(parsed.unanswered_faq_reports)) {
+        parsed.unanswered_faq_reports = [];
+      }
+      parsed.users.forEach((u) => {
+        if (u.role === 'STUDENT') {
+          if (!Array.isArray(u.interests)) {
+            u.interests = [...DEFAULT_INTERESTS];
+          }
+          if (!u.notification_preferences) {
+            u.notification_preferences = { ...DEFAULT_NOTIFICATION_PREFS };
+          }
+          if (!Array.isArray(u.saved_updates)) {
+            u.saved_updates = [];
+          }
+          if (u.emergency_profile && !u.emergency_profile.emergency_qr_token) {
+            u.emergency_profile.emergency_qr_token = `QR-EMR-${u.id.slice(-6).toUpperCase()}`;
+          }
+        }
+      });
+      return parsed;
+    }
+    return null;
   }
 
   private load(): DatabaseState {
@@ -3757,51 +3820,9 @@ class DataStore {
       if (fs.existsSync(STATE_FILE)) {
         const raw = fs.readFileSync(STATE_FILE, 'utf8');
         const parsed = JSON.parse(raw) as DatabaseState;
-        if (
-          parsed &&
-          parsed.seed_version === CURRENT_SEED_VERSION &&
-          Array.isArray(parsed.schemes) &&
-          parsed.schemes.length >= 16 &&
-          Array.isArray(parsed.rules) &&
-          Array.isArray(parsed.users) &&
-          Array.isArray(parsed.user_documents)
-        ) {
-          if (!Array.isArray(parsed.applications)) {
-            parsed.applications = [];
-          }
-          if (!Array.isArray(parsed.organization_tasks)) {
-            parsed.organization_tasks = [];
-          }
-          if (!Array.isArray(parsed.appointments) || parsed.appointments.length === 0) {
-            parsed.appointments = createSeedAppointments();
-          }
-          if (!Array.isArray(parsed.complaints) || parsed.complaints.length === 0) {
-            parsed.complaints = createSeedComplaints();
-          }
-          if (!Array.isArray(parsed.faqs) || parsed.faqs.length === 0) {
-            parsed.faqs = createSeedFaqs();
-          }
-          if (!Array.isArray(parsed.unanswered_faq_reports)) {
-            parsed.unanswered_faq_reports = [];
-          }
-          // Non-destructively ensure student defaults for QR tokens & interests
-          parsed.users.forEach((u) => {
-            if (u.role === 'STUDENT') {
-              if (!Array.isArray(u.interests)) {
-                u.interests = [...DEFAULT_INTERESTS];
-              }
-              if (!u.notification_preferences) {
-                u.notification_preferences = { ...DEFAULT_NOTIFICATION_PREFS };
-              }
-              if (!Array.isArray(u.saved_updates)) {
-                u.saved_updates = [];
-              }
-              if (u.emergency_profile && !u.emergency_profile.emergency_qr_token) {
-                u.emergency_profile.emergency_qr_token = `QR-EMR-${u.id.slice(-6).toUpperCase()}`;
-              }
-            }
-          });
-          return parsed;
+        const normalized = this.normalizeLoadedState(parsed);
+        if (normalized) {
+          return normalized;
         }
       }
     } catch (err) {
@@ -3810,6 +3831,50 @@ class DataStore {
     const seed = createInitialState();
     this.persist(seed);
     return seed;
+  }
+
+  public async hydrateFromRemote(): Promise<void> {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const remote = await loadAppStateSnapshotFromSupabase();
+      const normalized = this.normalizeLoadedState(remote);
+      if (normalized) {
+        this.state = normalized;
+        this.hydratedFromSupabase = true;
+        this.persist(this.state);
+        console.log('[store] Hydrated application state from Supabase PostgreSQL snapshot.');
+        return;
+      }
+      const seeded = await saveAppStateSnapshotToSupabase(this.state);
+      if (seeded.ok) {
+        this.hydratedFromSupabase = true;
+        console.log('[store] Seeded initial Supabase PostgreSQL snapshot.');
+      }
+    } catch (err) {
+      console.warn(
+        '[store] Remote hydration skipped:',
+        err instanceof Error ? err.message : 'Unknown error'
+      );
+    }
+  }
+
+  public getPersistenceSummary(): {
+    mode: 'supabase_snapshot' | 'persistent_disk' | 'local_disk';
+    supabase_configured: boolean;
+    custom_data_dir: boolean;
+  } {
+    const supabaseReady = isSupabaseConfigured();
+    const customDir = Boolean(CONFIGURED_DATA_DIR);
+    return {
+      mode:
+        supabaseReady && this.hydratedFromSupabase
+          ? 'supabase_snapshot'
+          : customDir
+            ? 'persistent_disk'
+            : 'local_disk',
+      supabase_configured: supabaseReady,
+      custom_data_dir: customDir,
+    };
   }
 
   private persist(state: DatabaseState): void {
@@ -3835,13 +3900,19 @@ class DataStore {
       return;
     }
     this.syncInFlight = true;
-    void syncStateToSupabase(this.state).finally(() => {
-      this.syncInFlight = false;
-      if (this.syncPending) {
-        this.syncPending = false;
-        this.queueSupabaseSync();
-      }
-    });
+    void syncStateToSupabase(this.state)
+      .then((res) => {
+        if (res.synced) {
+          this.hydratedFromSupabase = true;
+        }
+      })
+      .finally(() => {
+        this.syncInFlight = false;
+        if (this.syncPending) {
+          this.syncPending = false;
+          this.queueSupabaseSync();
+        }
+      });
   }
 
   public getState(): DatabaseState {
